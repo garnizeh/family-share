@@ -45,18 +45,18 @@ func (c *Cleanup) Execute() error
 ```
 
 ## Tests Required
-- [ ] Unit test: PhotoPath generates correct structure
-- [ ] Unit test: AtomicWrite succeeds and creates file
-- [ ] Unit test: AtomicWrite fails halfway, no partial file left
-- [ ] Unit test: Cleanup removes all registered temp files
-- [ ] Unit test: EnsureDir creates nested directories
+- [x] Unit test: PhotoPath generates correct structure
+- [x] Unit test: AtomicWrite succeeds and creates file
+- [x] Unit test: AtomicWrite fails halfway, no partial file left
+- [x] Unit test: Cleanup removes all registered temp files
+- [x] Unit test: EnsureDir creates nested directories
 
 ## PR Checklist
-- [ ] All functions have doc comments
-- [ ] Error messages are descriptive
-- [ ] Tests pass: `go test ./internal/storage/... -v`
-- [ ] Edge cases handled (empty albumID, invalid paths, permission errors)
-- [ ] No hardcoded paths (use configurable base directory)
+- [x] All functions have doc comments
+- [x] Error messages are descriptive
+- [x] Tests pass: `go test ./internal/storage/... -v`
+- [x] Edge cases handled (empty albumID, invalid paths, permission errors)
+- [x] No hardcoded paths (use configurable base directory)
 
 ## Git Workflow
 ```bash
