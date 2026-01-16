@@ -3,6 +3,7 @@
 You are acting as an expert Go and UX Developer. This project is a lightweight, self-hosted photo sharing app designed for low-resource VPS environments. The main goal is to allow users to upload and share photo albums with family members via expiring links, while optimizing for minimal storage usage and simplicity.
 
 ## Golden Rules
+0. Before making recommendations or code changes, meticulously verify the current project state (files, branches, build/tests, and recent edits) to avoid incorrect assumptions.
 1. Always write in English — all generated content (code, comments, filenames, documentation) and chat responses must be in English, even if you receive instructions in another language.
 2. When in doubt, ask simple yes/no questions before making any change; wait for the user's answer and incorporate it into your action.
 3. MVP-first: prioritize only what is required for a working MVP; defer non-essential features until explicitly requested.

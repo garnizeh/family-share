@@ -19,9 +19,6 @@
 /data/
 /data/*
 
-# SQLC generated code (if chosen to ignore)
-/internal/db/sqlc/
-
 # IDE
 .vscode/
 .idea/
