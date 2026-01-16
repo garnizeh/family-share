@@ -44,18 +44,18 @@ func ProcessAndSave(
 ```
 
 ## Tests Required
-- [ ] Integration test: full pipeline creates photo and file on disk
-- [ ] Integration test: pipeline failure cleans up temp files
-- [ ] Integration test: database rollback on file write failure
-- [ ] Unit test: metadata extraction (width, height, size)
+- [x] Integration test: full pipeline creates photo and file on disk
+- [x] Integration test: pipeline failure cleans up temp files
+- [x] Integration test: database rollback on file write failure
+- [x] Unit test: metadata extraction (width, height, size)
 
 ## PR Checklist
-- [ ] Atomic write used via storage helpers (task 025)
-- [ ] sqlc `CreatePhoto` query used for DB insert
-- [ ] Transaction wraps file write + DB insert
-- [ ] Cleanup runs on all error paths (defer)
-- [ ] Tests pass: `go test ./internal/pipeline/... -v`
-- [ ] Integration test uses temp directory and temp DB
+- [x] Atomic write used via storage helpers (task 025)
+- [x] sqlc `CreatePhoto` query used for DB insert
+- [x] Transaction wraps file write + DB insert
+- [x] Cleanup runs on all error paths (defer)
+- [x] Tests pass: `go test ./internal/pipeline/... -v`
+- [x] Integration test uses temp directory and temp DB
 
 ## Git Workflow
 ```bash
