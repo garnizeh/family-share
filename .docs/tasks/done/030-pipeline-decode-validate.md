@@ -10,12 +10,12 @@
 Implement the first stage of the image processing pipeline: decode uploaded images, validate format, and perform content sniffing.
 
 ## Acceptance Criteria
-- [ ] Accept multipart upload stream with size limit
-- [ ] Detect image MIME type (JPEG, PNG, WebP, HEIC, etc.)
-- [ ] Reject non-image uploads
-- [ ] Decode to `image.Image` in memory
-- [ ] Handle decode errors gracefully
-- [ ] Validate image dimensions are reasonable (e.g., max 8000x8000)
+- [x] Accept multipart upload stream with size limit
+- [x] Detect image MIME type (JPEG, PNG, WebP, HEIC, etc.)
+- [x] Reject non-image uploads
+- [x] Decode to `image.Image` in memory
+- [x] Handle decode errors gracefully
+- [x] Validate image dimensions are reasonable (e.g., max 8000x8000)
 
 ## Files to Add/Modify
 - `internal/pipeline/decode.go` — decode and validation logic
