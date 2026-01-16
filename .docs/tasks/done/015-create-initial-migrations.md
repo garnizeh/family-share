@@ -10,11 +10,23 @@
 Create SQL migration files for the initial database schema including albums, photos, share_links, share_link_views, and activity_events tables.
 
 ## Acceptance Criteria
-- [ ] Migration file `0001_init_schema.sql` created with all core tables
-- [ ] Indexes defined for performance (token lookup, foreign keys, created_at)
-- [ ] Foreign key constraints enabled
-- [ ] Migration guard table (`schema_migrations`) created
-- [ ] Simple migration runner implemented in `internal/db/migrate.go`
+- [x] Migration file `0001_init_schema.sql` created with all core tables
+- [x] Indexes defined for performance (token lookup, foreign keys, created_at)
+- [x] Foreign key constraints enabled
+- [x] Migration guard table (`schema_migrations`) created
+- [x] Simple migration runner implemented in `internal/db/migrate.go`
+
+### Notes on implementation
+- Migrations are embedded via `sql/migrations.go` (embed.FS) and live under `sql/schema/`.
+- `internal/db/migrate.go` implements `ApplyMigrations(db, migrationsFS)` which reads the embedded `schema` directory, orders migrations by numeric prefix, and applies each new migration inside a transaction, recording applied versions into `schema_migrations`.
+- `internal/db/db.go` exposes `InitDB(path string)` which opens the SQLite database, enables `PRAGMA foreign_keys = ON`, and invokes `ApplyMigrations` with the embedded migrations FS.
+
+### Fixes and outstanding items
+- Fixed an issue where migration contents were previously being read from disk (`os.ReadFile`) while the directory listing came from the embedded FS; the runner now reads migration bytes from the embed FS (`migrationsFS.ReadFile`).
+- `InitDB` previously accepted an unused `migrationsDir` parameter; this was removed and the function now uses the embedded migrations directly.
+- Optional improvements remaining:
+    - Run PRAGMA statements outside transactions if needed by specific PRAGMA semantics.
+    - Add unit tests to verify migration idempotency and PRAGMA behavior.
 
 ## Files to Add/Modify
 - `migrations/0001_init_schema.sql` — initial schema DDL

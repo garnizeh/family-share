@@ -57,11 +57,11 @@ go get github.com/joho/godotenv
 - None (dependency addition only)
 
 ## PR Checklist
-- [ ] `go mod tidy` completes successfully
-- [ ] `go build ./...` compiles without errors
-- [ ] All dependencies are from trusted sources
-- [ ] No CGO dependencies added
-- [ ] Dependency decision document created with rationale
+- [x] `go mod tidy` completes successfully
+- [x] `go build ./...` compiles without errors
+- [x] All dependencies are from trusted sources
+- [x] No CGO dependencies added
+- [x] Dependency decision document created with rationale
 
 ## Git Workflow
 ```bash

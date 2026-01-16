@@ -34,11 +34,11 @@ Set up the initial project structure with Go module, environment configuration, 
 - None (structural setup)
 
 ## PR Checklist
-- [ ] All directories created and committed (use `.gitkeep` for empty dirs)
-- [ ] `.env.example` has comments for each variable
-- [ ] `.gitignore` prevents committing secrets and build artifacts
-- [ ] `go mod tidy` runs without errors
-- [ ] README contains project name, description, and basic structure
+- [x] All directories created and committed (use `.gitkeep` for empty dirs)
+- [x] `.env.example` has comments for each variable
+- [x] `.gitignore` prevents committing secrets and build artifacts
+- [x] `go mod tidy` runs without errors
+- [x] README contains project name, description, and basic structure
 
 ## Git Workflow
 ```bash
