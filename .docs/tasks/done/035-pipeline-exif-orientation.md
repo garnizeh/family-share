@@ -10,11 +10,11 @@
 Extract EXIF orientation tag from JPEG images and apply the correct rotation/flip to ensure images display correctly.
 
 ## Acceptance Criteria
-- [ ] EXIF data extracted from JPEG uploads
-- [ ] Orientation tag (1-8) parsed correctly
-- [ ] Image rotated/flipped based on orientation value
-- [ ] Non-JPEG images skip EXIF processing
-- [ ] Corrected image returned for next pipeline stage
+- [x] EXIF data extracted from JPEG uploads
+- [x] Orientation tag (1-8) parsed correctly
+- [x] Image rotated/flipped based on orientation value
+- [x] Non-JPEG images skip EXIF processing
+- [x] Corrected image returned for next pipeline stage
 
 ## Files to Add/Modify
 - `internal/pipeline/exif.go` — EXIF extraction and orientation correction
