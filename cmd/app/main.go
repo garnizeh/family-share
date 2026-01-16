@@ -1,18 +1,83 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+
+	"familyshare/internal/config"
+	"familyshare/internal/db"
+	"familyshare/internal/handler"
+	"familyshare/internal/storage"
+	"familyshare/web"
 )
 
 func main() {
-	// Minimal main for project scaffolding. Full server implemented in internal packages.
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("FamilyShare — initial scaffold"))
-	})
-	log.Println("Starting FamilyShare on :8080")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
-		log.Fatal(err)
+	// Load config from environment
+	cfg := config.Load()
+
+	// Initialize database
+	database, err := db.InitDB(cfg.DatabasePath)
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
 	}
+	defer database.Close()
+
+	// Initialize storage
+	store := storage.New(cfg.DataDir)
+
+	// Initialize router
+	r := chi.NewRouter()
+
+	// Global middleware
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Timeout(60 * time.Second))
+
+	// Initialize handlers
+	h := handler.New(database, store, web.EmbedFS)
+
+	// Register routes
+	h.RegisterRoutes(r)
+
+	// Create server
+	srv := &http.Server{
+		Addr:         cfg.ServerAddr,
+		Handler:      r,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	// Graceful shutdown
+	go func() {
+		log.Printf("FamilyShare starting on %s", cfg.ServerAddr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server failed: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Shutting down server...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server exited")
 }
