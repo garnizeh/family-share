@@ -73,11 +73,11 @@ DELETE FROM albums WHERE id = ?;
 - [ ] Integration test: foreign key cascade (delete album → delete photos)
 
 ## PR Checklist
-- [ ] `sqlc generate` runs without errors
-- [ ] Generated code is gitignored or committed (decide and document)
-- [ ] All TDD queries have corresponding SQL definitions
-- [ ] Repository wrapper provides clean API
-- [ ] Tests pass: `go test ./internal/...`
+- [x] `sqlc generate` runs without errors
+- [x] Generated code is gitignored or committed (decide and document)
+- [x] All TDD queries have corresponding SQL definitions
+- [x] Repository wrapper provides clean API
+- [x] Tests pass: `go test ./internal/...`
 
 ## Git Workflow
 ```bash
