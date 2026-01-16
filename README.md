@@ -15,3 +15,27 @@ go build -o familyshare ./cmd/app
 ```
 
 For full setup instructions see the TDD in `.docs/familyshare-tdd.md`.
+
+## Database migrations
+
+Migrations are embedded in the binary under `sql/schema/*` and applied at startup by the DB initializer in `internal/db`.
+
+The helper `InitDB` opens the SQLite database file, enables foreign keys and applies embedded migrations.
+
+Usage example (server bootstrap):
+
+```go
+db, err := db.InitDB("./data/familyshare.db")
+if err != nil {
+	// handle error
+}
+defer db.Close()
+```
+
+If you prefer to apply the migration manually for quick debugging, you can run:
+
+```bash
+sqlite3 ./data/familyshare.db < sql/schema/0001_init_schema.sql
+```
+
+The migration runner records applied versions in `schema_migrations` so re-running is safe.
