@@ -1,0 +1,28 @@
+# Binaries
+/bin/
+/*.exe
+/*.dll
+/*.so
+/*.dylib
+
+# Go build
+*.test
+*.out
+
+# Vendor
+/vendor/
+
+# Environment
+.env
+
+# Data storage
+/data/
+/data/*
+
+# SQLC generated code (if chosen to ignore)
+/internal/db/sqlc/
+
+# IDE
+.vscode/
+.idea/
+*.swp
