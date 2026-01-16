@@ -10,11 +10,11 @@
 Encode processed images to WebP format at 80% quality to minimize storage usage while maintaining acceptable visual quality.
 
 ## Acceptance Criteria
-- [ ] `image.Image` encoded to WebP bytes
-- [ ] Quality setting at 80 (configurable)
-- [ ] Encoded data written to `io.Writer`
-- [ ] Encoding errors handled gracefully
-- [ ] Final size logged for monitoring
+- [x] `image.Image` encoded to WebP bytes
+- [x] Quality setting at 80 (configurable)
+- [x] Encoded data written to `io.Writer`
+- [x] Encoding errors handled gracefully
+- [x] Final size logged for monitoring
 
 ## Files to Add/Modify
 - `internal/pipeline/encode.go` — WebP encoding logic
