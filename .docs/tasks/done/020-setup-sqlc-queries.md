@@ -18,10 +18,10 @@ Configure sqlc for type-safe SQL queries and generate Go code for all CRUD opera
 
 ## Files to Add/Modify
 - `sqlc.yaml` — sqlc configuration
-- `internal/db/queries/albums.sql` — album CRUD queries
-- `internal/db/queries/photos.sql` — photo CRUD queries
-- `internal/db/queries/share_links.sql` — share link queries
-- `internal/db/queries/activity_events.sql` — activity queries
+- `sql/queries/albums.sql` — album CRUD queries
+- `sql/queries/photos.sql` — photo CRUD queries
+- `sql/queries/share_links.sql` — share link queries
+- `sql/queries/activity_events.sql` — activity queries
 - `internal/db/sqlc/` — generated code (gitignored if using generation step)
 - `internal/repository/repository.go` — repository interface wrapper
 
@@ -30,8 +30,8 @@ Configure sqlc for type-safe SQL queries and generate Go code for all CRUD opera
 # sqlc.yaml
 version: "2"
 sql:
-  - schema: "migrations/"
-    queries: "internal/db/queries/"
+  - schema: "sql/schema/"
+    queries: "sql/queries/"
     engine: "sqlite"
     gen:
       go:
@@ -73,11 +73,11 @@ DELETE FROM albums WHERE id = ?;
 - [ ] Integration test: foreign key cascade (delete album → delete photos)
 
 ## PR Checklist
-- [ ] `sqlc generate` runs without errors
-- [ ] Generated code is gitignored or committed (decide and document)
-- [ ] All TDD queries have corresponding SQL definitions
-- [ ] Repository wrapper provides clean API
-- [ ] Tests pass: `go test ./internal/...`
+- [x] `sqlc generate` runs without errors
+- [x] Generated code is gitignored or committed (decide and document)
+- [x] All TDD queries have corresponding SQL definitions
+- [x] Repository wrapper provides clean API
+- [x] Tests pass: `go test ./internal/...`
 
 ## Git Workflow
 ```bash
@@ -85,7 +85,7 @@ git checkout -b feat/sqlc
 # Install sqlc: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 sqlc generate
 go test ./internal/... -v
-git add sqlc.yaml internal/db/queries/ internal/repository/
+git add sqlc.yaml sql/queries/ internal/repository/
 git commit -m "feat: setup sqlc and generate type-safe queries"
 git push origin feat/sqlc
 # Open PR: "Setup sqlc for type-safe database queries"
@@ -96,3 +96,6 @@ git push origin feat/sqlc
 - Keep query files organized by entity
 - Use prepared statements for all queries (sqlc default)
 - Repository layer abstracts sqlc for easier testing/mocking
+
+## Notes on schema location
+- The repository stores schema/migration SQL under `sql/schema/` and embeds it via `sql/migrations.go`. Configure `sqlc.yaml` to point `schema:` to `sql/schema/` so generated types align with the embedded schema location.
