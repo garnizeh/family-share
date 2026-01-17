@@ -5,6 +5,7 @@ go 1.25.6
 require (
 	github.com/chai2010/webp v1.4.0
 	github.com/disintegration/imaging v1.6.2
+	github.com/go-chi/chi/v5 v5.2.4
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	modernc.org/sqlite v1.44.1
 )
