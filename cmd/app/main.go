@@ -69,6 +69,22 @@ func main() {
 	// Wait for interrupt signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start background janitor to clean orphaned temp uploads every 15 minutes.
+	go func() {
+		ticker := time.NewTicker(15 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				// best-effort cleanup
+				_ = storage.CleanOrphanedTempFiles(15 * time.Minute)
+			case <-quit:
+				return
+			}
+		}
+	}()
+
 	<-quit
 
 	log.Println("Shutting down server...")

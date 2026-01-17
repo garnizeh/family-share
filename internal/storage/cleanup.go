@@ -2,6 +2,9 @@ package storage
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
+	"time"
 )
 
 // Cleanup is a simple helper to track temporary paths and remove them.
@@ -27,4 +30,34 @@ func (c *Cleanup) Execute() error {
 	}
 	c.paths = nil
 	return firstErr
+}
+
+// CleanOrphanedTempFiles removes temp upload files older than maxAge from the system temp dir.
+// It only touches files matching the prefix/suffix pattern used by uploads: "upload-*.tmp".
+func CleanOrphanedTempFiles(maxAge time.Duration) error {
+	tmpDir := os.TempDir()
+	entries, err := os.ReadDir(tmpDir)
+	if err != nil {
+		return err
+	}
+
+	cutoff := time.Now().Add(-maxAge)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !strings.HasPrefix(name, "upload-") || !strings.HasSuffix(name, ".tmp") {
+			continue
+		}
+		full := filepath.Join(tmpDir, name)
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		if info.ModTime().Before(cutoff) {
+			_ = os.Remove(full)
+		}
+	}
+	return nil
 }
