@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"familyshare/internal/db/sqlc"
+	"familyshare/internal/middleware"
 )
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
@@ -26,8 +27,10 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 		r.Get("/{token}", h.NotImplementedYet)
 	})
 
-	// Admin routes (authentication middleware will be added in task 090)
+	// Admin routes
 	r.Route("/admin", func(r chi.Router) {
+		// Apply admin auth middleware (stub)
+		r.Use(middleware.AdminOnly)
 		// Admin pages
 		r.Get("/", h.AdminDashboard)
 		r.Get("/albums", h.ListAlbums)
@@ -36,8 +39,8 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 		r.Post("/albums", h.NotImplementedYet)
 		r.Get("/albums/{id}", h.NotImplementedYet)
 
-		// Photo upload (will be implemented in task 055)
-		r.Post("/albums/{id}/photos", h.NotImplementedYet)
+		// Photo upload
+		r.Post("/albums/{id}/photos", h.AdminUploadPhotos)
 	})
 }
 

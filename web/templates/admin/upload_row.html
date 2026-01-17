@@ -1,0 +1,10 @@
+{{define "upload_row.html"}}
+<div class="upload-row {{ if .Error }}error{{ else }}success{{ end }}">
+    <span class="filename">{{ .Filename }}</span>
+    {{ if .Error }}
+    <span class="status error">Failed: {{ .Error }}</span>
+    {{ else }}
+    <span class="status success">Uploaded (ID: {{ .PhotoID }})</span>
+    {{ end }}
+</div>
+{{end}}
