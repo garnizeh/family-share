@@ -35,16 +35,16 @@ Current implementation (`internal/handler/admin_upload.go`):
    - Context timeout: 5 minutes per upload request
 
 ## Acceptance Criteria
-- [ ] Handler uses `r.MultipartReader()` for streaming parsing
-- [ ] Each uploaded file written to temp file in system temp dir (`os.TempDir()`)
-- [ ] Temp files have `0600` permissions
-- [ ] Temp files cleaned up on success and error paths
-- [ ] Per-file size limit (25MB) enforced during copy
-- [ ] Total request size limit (100MB) enforced via `MaxBytesReader`
-- [ ] Context with timeout applied to prevent hung uploads
-- [ ] Background janitor cleans temp files older than 15 minutes
-- [ ] Memory usage under 50MB for 10 concurrent 20MB uploads (measured)
-- [ ] Existing tests pass without modification
+- [x] Handler uses `r.MultipartReader()` for streaming parsing
+- [x] Each uploaded file written to temp file in system temp dir (`os.TempDir()`)
+- [x] Temp files have `0600` permissions
+- [x] Temp files cleaned up on success and error paths
+- [x] Per-file size limit (25MB) enforced during copy
+- [x] Total request size limit (100MB) enforced via `MaxBytesReader`
+- [x] Context with timeout applied to prevent hung uploads
+- [x] Background janitor cleans temp files older than 15 minutes
+- [x] Memory usage under 50MB for 10 concurrent 20MB uploads (measured)
+- [x] Existing tests pass without modification
 
 ## Files to Add/Modify
 - `internal/handler/admin_upload.go` — refactor to streaming
