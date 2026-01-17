@@ -10,12 +10,12 @@
 Create the admin upload endpoint that accepts multipart photo uploads, processes them through the pipeline, and returns HTMX partial responses for progress indication.
 
 ## Acceptance Criteria
-- [ ] `POST /admin/albums/{id}/photos` accepts multipart uploads
-- [ ] Supports single and batch uploads
-- [ ] Calls image pipeline for each file
-- [ ] Returns HTMX partial with success/error status per file
-- [ ] Upload size limited to prevent DoS
-- [ ] Admin authentication required (middleware)
+- [x] `POST /admin/albums/{id}/photos` accepts multipart uploads
+- [x] Supports single and batch uploads
+- [x] Calls image pipeline for each file
+- [x] Returns HTMX partial with success/error status per file
+- [x] Upload size limited to prevent DoS
+- [x] Admin authentication required (middleware)
 
 ## Files to Add/Modify
 - `internal/handler/admin_upload.go` — upload handler
@@ -61,19 +61,19 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 ```
 
 ## Tests Required
-- [ ] Integration test: upload single JPEG, verify photo created
-- [ ] Integration test: upload batch (3 files), verify all created
-- [ ] Integration test: upload invalid file, verify error returned
-- [ ] Integration test: upload exceeds size limit, verify rejection
-- [ ] Unit test: multipart parsing
+- [x] Integration test: upload single JPEG, verify photo created
+- [x] Integration test: upload batch (3 files), verify all created
+- [x] Integration test: upload invalid file, verify error returned
+- [x] Integration test: upload exceeds size limit, verify rejection
+- [x] Unit test: multipart parsing (covered in integration tests)
 
 ## PR Checklist
-- [ ] Upload size limits enforced (per-file and total)
-- [ ] HTMX responses are valid HTML partials
-- [ ] Errors are user-friendly ("File too large", not "EOF")
-- [ ] Auth middleware applied to route (stub OK for now)
-- [ ] Tests pass: `go test ./internal/handler/... -v`
-- [ ] Manual test: upload via curl or Postman works
+- [x] Upload size limits enforced (per-file and total)
+- [x] HTMX responses are valid HTML partials
+- [x] Errors are user-friendly ("File too large", not "EOF")
+- [x] Auth middleware applied to route (stub OK for now)
+- [x] Tests pass: `go test ./internal/handler/... -v`
+- [x] Manual test: upload via curl or Postman works
 
 ## Git Workflow
 ```bash
@@ -87,8 +87,54 @@ git push origin feat/admin-upload
 # Open PR: "Implement admin upload handler with HTMX partials"
 ```
 
+## Manual Testing Commands
+
+### Single file upload:
+```bash
+# First, create a test album
+curl -X POST http://localhost:8080/admin/albums \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Test Album", "description": "For testing"}'
+
+# Upload single photo (replace {album_id} with actual ID)
+curl -X POST http://localhost:8080/admin/albums/{album_id}/photos \
+  -F "photos=@/path/to/photo.jpg"
+```
+
+### Batch upload:
+```bash
+# Upload multiple photos at once
+curl -X POST http://localhost:8080/admin/albums/{album_id}/photos \
+  -F "photos=@photo1.jpg" \
+  -F "photos=@photo2.jpg" \
+  -F "photos=@photo3.jpg"
+```
+
+### Test size limit:
+```bash
+# Create a large test file (26MB - exceeds 25MB limit)
+dd if=/dev/zero of=large.jpg bs=1M count=26
+
+# Try to upload (should be rejected)
+curl -X POST http://localhost:8080/admin/albums/{album_id}/photos \
+  -F "photos=@large.jpg"
+
+# Cleanup
+rm large.jpg
+```
+
+### Test invalid file:
+```bash
+# Try to upload a non-image file
+echo "not an image" > test.txt
+curl -X POST http://localhost:8080/admin/albums/{album_id}/photos \
+  -F "photos=@test.txt"
+rm test.txt
+```
+
 ## Notes
 - For MVP, admin auth can be a simple stub (always allow)
 - Consider streaming response for large batches (flush after each file)
 - Use context with timeout to prevent hung uploads
 - Log upload attempts and failures for monitoring
+- **Optimization needed:** Current implementation buffers files in memory; see Task 053 for disk streaming optimization
