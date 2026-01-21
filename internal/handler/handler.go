@@ -4,8 +4,12 @@ import (
 	"database/sql"
 	"embed"
 	"html/template"
+	"io/fs"
+	"log"
 	"net/http"
 	"sync"
+
+	"strings"
 
 	"familyshare/internal/db/sqlc"
 	"familyshare/internal/storage"
@@ -26,22 +30,44 @@ func New(database *sql.DB, store *storage.Storage, embedFS embed.FS) *Handler {
 	// (cmd embed) or under "templates/..." (web package embed).
 	var tmpl *template.Template
 	var err error
-	patterns := []string{
-		"web/templates/**/*.html",
-		"templates/**/*.html",
-		"web/templates/*",
-		"templates/*",
-	}
-	for _, p := range patterns {
-		tmpl, err = template.ParseFS(embedFS, p)
-		if err == nil {
-			break
+
+	// Collect all embedded .html files by walking the embed FS so we don't
+	// depend on specific glob support or relative path patterns.
+	var files []string
+	_ = fs.WalkDir(embedFS, ".", func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if strings.HasSuffix(path, ".html") {
+			files = append(files, path)
+		}
+		return nil
+	})
+
+	if len(files) == 0 {
+		log.Printf("no embedded templates found (walk returned 0 files)")
+		tmpl = template.New("base")
+	} else {
+		log.Printf("template files to parse: %v", files)
+		tmpl, err = template.ParseFS(embedFS, files...)
+		if err != nil {
+			log.Printf("template parse error: %v", err)
+			// If parsing fails, fall back to an empty template set to avoid panics in tests.
+			tmpl = template.New("base")
 		}
 	}
-	if err != nil {
-		// If no templates found, create an empty template set to avoid panics in tests.
-		tmpl = template.New("base")
+
+	// Log loaded template names for debugging template lookup issues
+	var names []string
+	for _, t := range tmpl.Templates() {
+		if t.Name() != "" {
+			names = append(names, t.Name())
+		}
 	}
+	log.Printf("loaded templates: %v", names)
 
 	return &Handler{
 		db:        database,

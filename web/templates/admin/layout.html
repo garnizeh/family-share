@@ -1,3 +1,22 @@
+{{define "admin_nav.html"}}
+<nav class="admin-nav">
+    <div class="admin-nav-container">
+        <div class="admin-nav-brand">
+            <h1>📸 FamilyShare</h1>
+        </div>
+
+        <button class="nav-toggle" x-data @click="$refs.menu.classList.toggle('show-mobile')" aria-label="Toggle menu">
+            ☰
+        </button>
+
+        <ul class="admin-nav-menu" x-ref="menu">
+            <li><a href="/admin">Dashboard</a></li>
+            <li><a href="/admin/albums">Albums</a></li>
+        </ul>
+    </div>
+</nav>
+{{end}}
+
 {{define "admin-layout"}}
 <!DOCTYPE html>
 <html lang="en">
@@ -12,14 +31,11 @@
 </head>
 
 <body>
-    <nav class="admin-nav">
-        <h1>FamilyShare Admin</h1>
-        <ul>
-            <li><a href="/admin">Dashboard</a></li>
-            <li><a href="/admin/albums">Albums</a></li>
-        </ul>
-    </nav>
-    <main class="admin-content">
+    <a href="#main-content" class="skip-to-main">Skip to main content</a>
+
+    {{template "admin_nav.html" .}}
+
+    <main id="main-content" class="admin-content">
         {{block "content" .}}{{end}}
     </main>
 </body>

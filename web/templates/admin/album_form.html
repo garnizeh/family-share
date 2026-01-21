@@ -1,0 +1,32 @@
+{{define "album_form.html"}}
+{{/* Accept either nil (create) or an sqlc.Album (edit). */}}
+<div class="card">
+    <div class="card-body">
+        <h2 class="section-title">{{if .}}Edit Album{{else}}Create Album{{end}}</h2>
+        <form {{if .}}hx-post="/admin/albums/{{.ID}}" {{else}}hx-post="/admin/albums" {{end}} hx-target="#albums-grid"
+            hx-swap="afterbegin">
+            <div class="form-group">
+                <label for="album-title" class="form-label form-label-required">Title</label>
+                <input type="text" id="album-title" name="title" class="form-input" placeholder="Summer Vacation 2026"
+                    value="{{if .}}{{.Title}}{{end}}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="album-description" class="form-label">Description</label>
+                <textarea id="album-description" name="description" class="form-textarea"
+                    placeholder="Photos from our family trip"
+                    rows="3">{{if .}}{{if .Description.Valid}}{{.Description.String}}{{end}}{{end}}</textarea>
+            </div>
+
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    {{if .}}Save Changes{{else}}Create Album{{end}}
+                </button>
+                {{if .}}
+                <button type="button" hx-get="/admin/albums" hx-target="body" class="btn btn-secondary">Cancel</button>
+                {{end}}
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}

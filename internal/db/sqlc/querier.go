@@ -9,6 +9,8 @@ import (
 )
 
 type Querier interface {
+	CountAlbums(ctx context.Context) (int64, error)
+	CountPhotos(ctx context.Context) (int64, error)
 	CreateActivityEvent(ctx context.Context, arg CreateActivityEventParams) error
 	CreateAlbum(ctx context.Context, arg CreateAlbumParams) (Album, error)
 	CreatePhoto(ctx context.Context, arg CreatePhotoParams) (Photo, error)
@@ -16,12 +18,16 @@ type Querier interface {
 	DeleteAlbum(ctx context.Context, id int64) error
 	DeletePhoto(ctx context.Context, id int64) error
 	GetAlbum(ctx context.Context, id int64) (Album, error)
+	GetAlbumWithPhotoCount(ctx context.Context, id int64) (GetAlbumWithPhotoCountRow, error)
 	GetPhoto(ctx context.Context, id int64) (Photo, error)
 	GetShareLinkByToken(ctx context.Context, token string) (ShareLink, error)
+	GetTotalStorageBytes(ctx context.Context) (interface{}, error)
 	IncrementShareLinkView(ctx context.Context, arg IncrementShareLinkViewParams) error
 	ListAlbums(ctx context.Context, arg ListAlbumsParams) ([]Album, error)
+	ListAlbumsWithPhotoCount(ctx context.Context, arg ListAlbumsWithPhotoCountParams) ([]ListAlbumsWithPhotoCountRow, error)
 	ListPhotosByAlbum(ctx context.Context, arg ListPhotosByAlbumParams) ([]Photo, error)
 	ListRecentActivity(ctx context.Context, arg ListRecentActivityParams) ([]ActivityEvent, error)
+	SetAlbumCover(ctx context.Context, arg SetAlbumCoverParams) error
 	UpdateAlbum(ctx context.Context, arg UpdateAlbumParams) error
 }
 

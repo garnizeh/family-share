@@ -16,90 +16,90 @@ import (
 )
 
 func makeJPEG(t *testing.T, w, h int) *bytes.Reader {
-    t.Helper()
-    img := image.NewRGBA(image.Rect(0, 0, w, h))
-    // fill with a color
-    for y := 0; y < h; y++ {
-        for x := range w {
-            img.Set(x, y, color.RGBA{R: 100, G: 150, B: 200, A: 255})
-        }
-    }
-    var buf bytes.Buffer
-    if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 80}); err != nil {
-        t.Fatalf("encode jpeg: %v", err)
-    }
-    return bytes.NewReader(buf.Bytes())
+	t.Helper()
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	// fill with a color
+	for y := 0; y < h; y++ {
+		for x := range w {
+			img.Set(x, y, color.RGBA{R: 100, G: 150, B: 200, A: 255})
+		}
+	}
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 80}); err != nil {
+		t.Fatalf("encode jpeg: %v", err)
+	}
+	return bytes.NewReader(buf.Bytes())
 }
 
 func TestProcessAndSave_Success(t *testing.T) {
-    tmp := t.TempDir()
-    os.Setenv("STORAGE_PATH", tmp)
+	tmp := t.TempDir()
+	os.Setenv("STORAGE_PATH", tmp)
 
-    dbPath := filepath.Join(tmp, "test.db")
-    d, err := db.InitDB(dbPath)
-    if err != nil {
-        t.Fatalf("init db: %v", err)
-    }
-    defer d.Close()
+	dbPath := filepath.Join(tmp, "test.db")
+	d, err := db.InitDB(dbPath)
+	if err != nil {
+		t.Fatalf("init db: %v", err)
+	}
+	defer d.Close()
 
-    ctx := context.Background()
-    q := sqlc.New(d)
-    alb, err := q.CreateAlbum(ctx, sqlc.CreateAlbumParams{Title: "test"})
-    if err != nil {
-        t.Fatalf("create album: %v", err)
-    }
+	ctx := context.Background()
+	q := sqlc.New(d)
+	alb, err := q.CreateAlbum(ctx, sqlc.CreateAlbumParams{Title: "test"})
+	if err != nil {
+		t.Fatalf("create album: %v", err)
+	}
 
-    r := makeJPEG(t, 200, 100)
-    photo, err := ProcessAndSave(ctx, d, alb.ID, r, 10<<20)
-    if err != nil {
-        t.Fatalf("process and save failed: %v", err)
-    }
+	r := makeJPEG(t, 200, 100)
+	photo, err := ProcessAndSave(ctx, d, alb.ID, r, 10<<20)
+	if err != nil {
+		t.Fatalf("process and save failed: %v", err)
+	}
 
-    // verify file exists
-    path := storage.PhotoPath(tmp, alb.ID, photo.ID, photo.Format)
-    if _, err := os.Stat(path); err != nil {
-        t.Fatalf("expected file at %s, stat error: %v", path, err)
-    }
-    if photo.SizeBytes <= 0 {
-        t.Fatalf("expected photo size recorded, got %d", photo.SizeBytes)
-    }
+	// verify file exists
+	path := storage.PhotoPath(tmp, alb.ID, photo.ID, photo.Format)
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("expected file at %s, stat error: %v", path, err)
+	}
+	if photo.SizeBytes <= 0 {
+		t.Fatalf("expected photo size recorded, got %d", photo.SizeBytes)
+	}
 }
 
 func TestProcessAndSave_WriteFailure_RollsBack(t *testing.T) {
-    tmp := t.TempDir()
-    // create a file at the base storage path to block directory creation
-    blocked := filepath.Join(tmp, "blocked")
-    if err := os.WriteFile(blocked, []byte("x"), 0o600); err != nil {
-        t.Fatalf("write blocker: %v", err)
-    }
-    os.Setenv("STORAGE_PATH", blocked)
+	tmp := t.TempDir()
+	// create a file at the base storage path to block directory creation
+	blocked := filepath.Join(tmp, "blocked")
+	if err := os.WriteFile(blocked, []byte("x"), 0o600); err != nil {
+		t.Fatalf("write blocker: %v", err)
+	}
+	os.Setenv("STORAGE_PATH", blocked)
 
-    dbPath := filepath.Join(tmp, "test2.db")
-    d, err := db.InitDB(dbPath)
-    if err != nil {
-        t.Fatalf("init db: %v", err)
-    }
-    defer d.Close()
+	dbPath := filepath.Join(tmp, "test2.db")
+	d, err := db.InitDB(dbPath)
+	if err != nil {
+		t.Fatalf("init db: %v", err)
+	}
+	defer d.Close()
 
-    ctx := context.Background()
-    q := sqlc.New(d)
-    alb, err := q.CreateAlbum(ctx, sqlc.CreateAlbumParams{Title: "test"})
-    if err != nil {
-        t.Fatalf("create album: %v", err)
-    }
+	ctx := context.Background()
+	q := sqlc.New(d)
+	alb, err := q.CreateAlbum(ctx, sqlc.CreateAlbumParams{Title: "test"})
+	if err != nil {
+		t.Fatalf("create album: %v", err)
+	}
 
-    r := makeJPEG(t, 200, 100)
-    _, err = ProcessAndSave(ctx, d, alb.ID, r, 10<<20)
-    if err == nil {
-        t.Fatalf("expected error when storage path is blocked")
-    }
+	r := makeJPEG(t, 200, 100)
+	_, err = ProcessAndSave(ctx, d, alb.ID, r, 10<<20)
+	if err == nil {
+		t.Fatalf("expected error when storage path is blocked")
+	}
 
-    // ensure no photos for album
-    list, err := q.ListPhotosByAlbum(ctx, sqlc.ListPhotosByAlbumParams{AlbumID: alb.ID, Limit: 10, Offset: 0})
-    if err != nil {
-        t.Fatalf("list photos: %v", err)
-    }
-    if len(list) != 0 {
-        t.Fatalf("expected no photos after failed save, got %d", len(list))
-    }
+	// ensure no photos for album
+	list, err := q.ListPhotosByAlbum(ctx, sqlc.ListPhotosByAlbumParams{AlbumID: alb.ID, Limit: 10, Offset: 0})
+	if err != nil {
+		t.Fatalf("list photos: %v", err)
+	}
+	if len(list) != 0 {
+		t.Fatalf("expected no photos after failed save, got %d", len(list))
+	}
 }

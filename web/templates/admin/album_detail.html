@@ -1,0 +1,198 @@
+{{define "album_detail.html"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Album.Title}} - FamilyShare Admin</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.body.addEventListener('closeModal', function () {
+                window.dispatchEvent(new CustomEvent('close-modal'));
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <a href="#main-content" class="skip-to-main">Skip to main content</a>
+
+    {{template "admin_nav.html" .}}
+
+    <main id="main-content" class="admin-content"
+        x-data="{ modalOpen: false, confirmDeleteOpen: false, confirmDeletePhotoOpen: false, deletePhotoId: null }">
+
+        <nav class="breadcrumb">
+            <a href="/admin" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">›</span>
+            <a href="/admin/albums" class="breadcrumb-item">Albums</a>
+            <span class="breadcrumb-separator">›</span>
+            <span class="breadcrumb-item breadcrumb-current">{{.Album.Title}}</span>
+        </nav>
+
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="page-title mb-2">{{.Album.Title}}</h1>
+                {{if .Album.Description.Valid}}
+                <p class="text-muted mb-0">{{.Album.Description.String}}</p>
+                {{end}}
+            </div>
+            <div class="flex gap-2">
+                <button hx-get="/admin/albums/{{.Album.ID}}/edit?view=detail" hx-target="#edit-modal .modal-body"
+                    class="btn btn-secondary">Edit Album</button>
+                <button @click="confirmDeleteOpen = true" class="btn btn-danger">Delete Album</button>
+            </div>
+        </div>
+
+        <section class="mb-8">
+            <h2 class="section-title">Upload Photos</h2>
+            <form hx-post="/admin/albums/{{.Album.ID}}/photos" hx-encoding="multipart/form-data"
+                hx-target="#upload-list" hx-swap="beforeend"
+                hx-on::after-request="setTimeout(() => { window.location.reload(); }, 1000)">
+                <div class="upload-zone">
+                    <div class="upload-zone-icon">📤</div>
+                    <h3 class="upload-zone-title">Upload Photos</h3>
+                    <p class="upload-zone-hint">Select one or more photos (max 25MB each)</p>
+                    <input type="file" name="photos" accept="image/*" multiple required style="margin-bottom: 1rem;">
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+            <div id="upload-list" class="upload-list mt-4"></div>
+        </section>
+
+        <section id="photos-section">
+            <h2 class="section-title">Photos</h2>
+            {{if .Photos}}
+            <div id="photos-grid" class="grid-photos">
+                {{range .Photos}}
+                <div class="card card-photo" id="photo-{{.ID}}">
+                    <img src="/data/photos/{{.ID}}.webp" alt="Photo {{.ID}}" class="card-photo-preview" loading="lazy">
+                    <div class="card-photo-info">
+                        <p class="text-xs text-muted mb-0">{{.Filename}}</p>
+                    </div>
+                    <div class="card-photo-actions">
+                        <button hx-post="/admin/photos/{{.ID}}/set-cover" hx-trigger="click" hx-swap="none"
+                            class="btn btn-secondary btn-sm" title="Set as cover photo">⭐</button>
+                        <button @click="deletePhotoId = {{.ID}}; confirmDeletePhotoOpen = true"
+                            class="btn btn-danger btn-sm" title="Delete photo">🗑️</button>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            {{else}}
+            <div id="photos-empty" class="empty-state">
+                <div class="empty-state-icon">📷</div>
+                <h3 class="empty-state-title">No Photos Yet</h3>
+                <p class="empty-state-description">
+                    Upload your first photos using the form above.
+                </p>
+            </div>
+            {{end}}
+        </section>
+
+        <!-- Edit Modal -->
+        <div id="edit-modal" class="modal" x-show="modalOpen" @click.self="modalOpen = false"
+            @close-modal.window="modalOpen = false" style="display: none;" x-cloak>
+            <div class="modal-backdrop" @click="modalOpen = false"></div>
+            <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                    <h2 class="modal-title">Edit Album</h2>
+                    <button @click="modalOpen = false" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body" @htmx:after-swap="modalOpen = true">
+                    <!-- Edit form will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal" x-show="confirmDeleteOpen" @click.self="confirmDeleteOpen = false" style="display: none;"
+            x-cloak>
+            <div class="modal-backdrop" @click="confirmDeleteOpen = false"></div>
+            <div class="modal-content" @click.stop style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">Delete Album</h2>
+                    <button @click="confirmDeleteOpen = false" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: var(--space-4); color: var(--color-gray-700);">
+                        Are you sure you want to delete <strong>{{.Album.Title}}</strong>?
+                    </p>
+                    <p style="color: var(--color-error); font-size: var(--font-size-sm);">
+                        ⚠️ This will permanently delete the album and all its photos. This action cannot be undone.
+                    </p>
+                </div>
+                <div
+                    style="padding: var(--space-6); border-top: var(--border-width) solid var(--color-gray-200); display: flex; gap: var(--space-3); justify-content: flex-end;">
+                    <button @click="confirmDeleteOpen = false" class="btn btn-secondary">
+                        Cancel
+                    </button>
+                    <button hx-delete="/admin/albums/{{.Album.ID}}"
+                        hx-on::after-request="window.location='/admin/albums'" @click="confirmDeleteOpen = false"
+                        class="btn btn-danger">
+                        Delete Album
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Photo Confirmation Modal -->
+        <div class="modal" x-show="confirmDeletePhotoOpen" @click.self="confirmDeletePhotoOpen = false"
+            style="display: none;" x-cloak>
+            <div class="modal-backdrop" @click="confirmDeletePhotoOpen = false"></div>
+            <div class="modal-content" @click.stop style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">Delete Photo</h2>
+                    <button @click="confirmDeletePhotoOpen = false" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: var(--space-4); color: var(--color-gray-700);">
+                        Are you sure you want to delete this photo?
+                    </p>
+                    <p style="color: var(--color-error); font-size: var(--font-size-sm);">
+                        ⚠️ This action cannot be undone.
+                    </p>
+                </div>
+                <div
+                    style="padding: var(--space-6); border-top: var(--border-width) solid var(--color-gray-200); display: flex; gap: var(--space-3); justify-content: flex-end;">
+                    <button @click="confirmDeletePhotoOpen = false" class="btn btn-secondary">
+                        Cancel
+                    </button>
+                    <button @click="fetch('/admin/photos/' + deletePhotoId, { method: 'DELETE' }).then(() => { 
+                            const photoCard = document.querySelector('#photo-' + deletePhotoId);
+                            photoCard.remove(); 
+                            const grid = document.querySelector('#photos-grid');
+                            if (grid && grid.children.length === 0) {
+                                const emptyState = document.createElement('div');
+                                emptyState.id = 'photos-empty';
+                                emptyState.className = 'empty-state';
+                                const icon = document.createElement('div');
+                                icon.className = 'empty-state-icon';
+                                icon.textContent = '📷';
+                                const title = document.createElement('h3');
+                                title.className = 'empty-state-title';
+                                title.textContent = 'No Photos Yet';
+                                const desc = document.createElement('p');
+                                desc.className = 'empty-state-description';
+                                desc.textContent = 'Upload your first photos using the form above.';
+                                emptyState.appendChild(icon);
+                                emptyState.appendChild(title);
+                                emptyState.appendChild(desc);
+                                grid.replaceWith(emptyState);
+                            }
+                            confirmDeletePhotoOpen = false; 
+                        })" class="btn btn-danger">
+                        Delete Photo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>
+{{end}}

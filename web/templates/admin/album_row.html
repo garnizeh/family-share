@@ -1,0 +1,27 @@
+{{define "album_row.html"}}
+<div class="card card-album" id="album-{{.ID}}">
+    {{if .CoverPhotoID.Valid}}
+    <img src="/data/photos/{{.CoverPhotoID.Int64}}.webp" alt="{{.Title}}" class="card-cover" loading="lazy">
+    {{else}}
+    <div class="card-cover-placeholder">📷</div>
+    {{end}}
+
+    <div class="card-body">
+        <h3 class="card-title">{{.Title}}</h3>
+        {{if .Description.Valid}}
+        <p class="card-description">{{.Description.String}}</p>
+        {{end}}
+        <p class="card-meta">{{.PhotoCount}} photo{{if ne .PhotoCount 1}}s{{end}}</p>
+    </div>
+
+    <div class="card-actions">
+        <a href="/admin/albums/{{.ID}}" class="btn btn-primary btn-sm">View</a>
+        <button hx-get="/admin/albums/{{.ID}}/edit" hx-target="#edit-modal .modal-body"
+            class="btn btn-secondary btn-sm">Edit</button>
+        <button @click.prevent="deleteAlbumId = {{.ID}}; deleteAlbumTitle = `{{.Title}}`; confirmDeleteOpen = true"
+            class="btn btn-danger btn-sm">Delete</button>
+        <form id="delete-form-{{.ID}}" hx-delete="/admin/albums/{{.ID}}" hx-target="#album-{{.ID}}" hx-swap="outerHTML"
+            style="display: none;"></form>
+    </div>
+</div>
+{{end}}

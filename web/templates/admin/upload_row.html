@@ -1,10 +1,30 @@
 {{define "upload_row.html"}}
-<div class="upload-row {{ if .Error }}error{{ else }}success{{ end }}">
-    <span class="filename">{{ .Filename }}</span>
-    {{ if .Error }}
-    <span class="status error">Failed: {{ .Error }}</span>
-    {{ else }}
-    <span class="status success">Uploaded (ID: {{ .PhotoID }})</span>
-    {{ end }}
+<div class="upload-row">
+    <div class="upload-row-preview">
+        {{if .Error}}
+        ❌
+        {{else}}
+        ✅
+        {{end}}
+    </div>
+
+    <div class="upload-row-info">
+        <div class="upload-row-filename">{{ .Filename }}</div>
+        <div class="upload-row-meta">
+            {{if .Error}}
+            Error: {{ .Error }}
+            {{else}}
+            Successfully uploaded (ID: {{ .PhotoID }})
+            {{end}}
+        </div>
+    </div>
+
+    <div class="upload-row-status">
+        {{if .Error}}
+        <span class="upload-status-badge upload-status-error">Failed</span>
+        {{else}}
+        <span class="upload-status-badge upload-status-success">Success</span>
+        {{end}}
+    </div>
 </div>
 {{end}}

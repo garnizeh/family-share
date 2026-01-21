@@ -10,6 +10,17 @@ import (
 	"database/sql"
 )
 
+const countAlbums = `-- name: CountAlbums :one
+SELECT COUNT(*) FROM albums
+`
+
+func (q *Queries) CountAlbums(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countAlbums)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createAlbum = `-- name: CreateAlbum :one
 INSERT INTO albums (title, description)
 VALUES (?, ?)
@@ -62,6 +73,41 @@ func (q *Queries) GetAlbum(ctx context.Context, id int64) (Album, error) {
 	return i, err
 }
 
+const getAlbumWithPhotoCount = `-- name: GetAlbumWithPhotoCount :one
+SELECT 
+    a.id, a.title, a.description, a.cover_photo_id, a.created_at, a.updated_at,
+    COUNT(p.id) as photo_count
+FROM albums a
+LEFT JOIN photos p ON p.album_id = a.id
+WHERE a.id = ?
+GROUP BY a.id
+`
+
+type GetAlbumWithPhotoCountRow struct {
+	ID           int64          `json:"id"`
+	Title        string         `json:"title"`
+	Description  sql.NullString `json:"description"`
+	CoverPhotoID sql.NullInt64  `json:"cover_photo_id"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
+	UpdatedAt    sql.NullTime   `json:"updated_at"`
+	PhotoCount   int64          `json:"photo_count"`
+}
+
+func (q *Queries) GetAlbumWithPhotoCount(ctx context.Context, id int64) (GetAlbumWithPhotoCountRow, error) {
+	row := q.db.QueryRowContext(ctx, getAlbumWithPhotoCount, id)
+	var i GetAlbumWithPhotoCountRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.CoverPhotoID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.PhotoCount,
+	)
+	return i, err
+}
+
 const listAlbums = `-- name: ListAlbums :many
 SELECT id, title, description, cover_photo_id, created_at, updated_at FROM albums
 ORDER BY created_at DESC
@@ -101,6 +147,84 @@ func (q *Queries) ListAlbums(ctx context.Context, arg ListAlbumsParams) ([]Album
 		return nil, err
 	}
 	return items, nil
+}
+
+const listAlbumsWithPhotoCount = `-- name: ListAlbumsWithPhotoCount :many
+SELECT 
+    a.id,
+    a.title,
+    a.description,
+    a.cover_photo_id,
+    a.created_at,
+    a.updated_at,
+    COUNT(p.id) as photo_count
+FROM albums a
+LEFT JOIN photos p ON p.album_id = a.id
+GROUP BY a.id
+ORDER BY a.created_at DESC
+LIMIT ? OFFSET ?
+`
+
+type ListAlbumsWithPhotoCountParams struct {
+	Limit  int64 `json:"limit"`
+	Offset int64 `json:"offset"`
+}
+
+type ListAlbumsWithPhotoCountRow struct {
+	ID           int64          `json:"id"`
+	Title        string         `json:"title"`
+	Description  sql.NullString `json:"description"`
+	CoverPhotoID sql.NullInt64  `json:"cover_photo_id"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
+	UpdatedAt    sql.NullTime   `json:"updated_at"`
+	PhotoCount   int64          `json:"photo_count"`
+}
+
+func (q *Queries) ListAlbumsWithPhotoCount(ctx context.Context, arg ListAlbumsWithPhotoCountParams) ([]ListAlbumsWithPhotoCountRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAlbumsWithPhotoCount, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAlbumsWithPhotoCountRow{}
+	for rows.Next() {
+		var i ListAlbumsWithPhotoCountRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Description,
+			&i.CoverPhotoID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.PhotoCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const setAlbumCover = `-- name: SetAlbumCover :exec
+UPDATE albums
+SET cover_photo_id = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+`
+
+type SetAlbumCoverParams struct {
+	CoverPhotoID sql.NullInt64 `json:"cover_photo_id"`
+	ID           int64         `json:"id"`
+}
+
+func (q *Queries) SetAlbumCover(ctx context.Context, arg SetAlbumCoverParams) error {
+	_, err := q.db.ExecContext(ctx, setAlbumCover, arg.CoverPhotoID, arg.ID)
+	return err
 }
 
 const updateAlbum = `-- name: UpdateAlbum :exec

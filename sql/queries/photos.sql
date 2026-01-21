@@ -11,3 +11,9 @@ SELECT * FROM photos WHERE album_id = ? ORDER BY created_at DESC LIMIT ? OFFSET 
 
 -- name: DeletePhoto :exec
 DELETE FROM photos WHERE id = ?;
+
+-- name: CountPhotos :one
+SELECT COUNT(*) FROM photos;
+
+-- name: GetTotalStorageBytes :one
+SELECT COALESCE(SUM(size_bytes), 0) FROM photos;
