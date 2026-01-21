@@ -1,0 +1,24 @@
+{{define "album_edit_form_detail.html"}}
+<form hx-put="/admin/albums/{{.ID}}" hx-on::after-request="window.location.reload()">
+    <div class="form-group">
+        <label for="edit-title-{{.ID}}" class="form-label form-label-required">Title</label>
+        <input type="text" id="edit-title-{{.ID}}" name="title" class="form-input" value="{{.Title}}" required>
+    </div>
+
+    <div class="form-group">
+        <label for="edit-description-{{.ID}}" class="form-label">Description</label>
+        <textarea id="edit-description-{{.ID}}" name="description" class="form-textarea"
+            rows="3">{{if .Description.Valid}}{{.Description.String}}{{end}}</textarea>
+        <span class="form-help">Optional: Add a description for this album</span>
+    </div>
+
+    <div class="flex gap-2">
+        <button type="submit" class="btn btn-primary">
+            Save Changes
+        </button>
+        <button type="button" @click="modalOpen = false" class="btn btn-secondary">
+            Cancel
+        </button>
+    </div>
+</form>
+{{end}}

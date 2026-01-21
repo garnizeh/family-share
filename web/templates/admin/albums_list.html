@@ -1,0 +1,148 @@
+{{define "albums_list.html"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Albums - FamilyShare Admin</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.body.addEventListener('closeModal', function () {
+                window.dispatchEvent(new CustomEvent('close-modal'));
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <a href="#main-content" class="skip-to-main">Skip to main content</a>
+
+    {{template "admin_nav.html" .}}
+
+    <main id="main-content" class="admin-content"
+        x-data="{ showForm: new URLSearchParams(window.location.search).get('action') === 'create', modalOpen: false, confirmDeleteOpen: false, deleteAlbumId: null, deleteAlbumTitle: '' }">
+
+        <nav class="breadcrumb">
+            <a href="/admin" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">›</span>
+            <span class="breadcrumb-item breadcrumb-current">Albums</span>
+        </nav>
+
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="page-title mb-0">Albums</h1>
+            {{if gt (len .) 0}}
+            <button @click="showForm = !showForm" class="btn btn-primary">
+                <span x-text="showForm ? 'Cancel' : '+ New Album'"></span>
+            </button>
+            {{end}}
+        </div>
+
+        <section class="mb-8" x-show="showForm" x-cloak style="display: none;">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="section-title">Create New Album</h2>
+                    <form hx-post="/admin/albums" hx-target="#albums-grid" hx-swap="afterbegin"
+                        hx-on::after-request="this.reset(); showForm = false">
+                        <div class="form-group">
+                            <label for="title" class="form-label form-label-required">Title</label>
+                            <input type="text" id="title" name="title" class="form-input"
+                                placeholder="Summer Vacation 2026" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea id="description" name="description" class="form-textarea"
+                                placeholder="Photos from our family trip to the beach" rows="3"></textarea>
+                            <span class="form-help">Optional: Add a description for this album</span>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <span>Create Album</span>
+                            </button>
+                            <button type="button" @click="showForm = false" class="btn btn-secondary">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="albums-section">
+            {{if gt (len .) 0}}
+            <div id="albums-grid" class="grid-albums" x-show="!showForm">
+                {{range .}}
+                {{template "album_row.html" .}}
+                {{end}}
+            </div>
+            {{else}}
+            <div id="albums-grid" class="grid-albums" style="display: none;"></div>
+            <div class="empty-state" x-show="!showForm">
+                <div class="empty-state-icon">📁</div>
+                <h2 class="empty-state-title">No Albums Yet</h2>
+                <p class="empty-state-description">
+                    Create your first album to start organizing and sharing your photos with family.
+                </p>
+                <div class="flex gap-4 justify-center">
+                    <button @click="showForm = true" class="btn btn-primary btn-lg">+ Create New Album</button>
+                    <a href="/admin" class="btn btn-secondary btn-lg">← Back to Dashboard</a>
+                </div>
+            </div>
+            {{end}}
+        </section>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal" x-show="confirmDeleteOpen" @click.self="confirmDeleteOpen = false" style="display: none;"
+            x-cloak>
+            <div class="modal-backdrop" @click="confirmDeleteOpen = false"></div>
+            <div class="modal-content" @click.stop style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">Delete Album</h2>
+                    <button @click="confirmDeleteOpen = false" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: var(--space-4); color: var(--color-gray-700);">
+                        Are you sure you want to delete <strong x-text="deleteAlbumTitle"></strong>?
+                    </p>
+                    <p style="color: var(--color-error); font-size: var(--font-size-sm);">
+                        ⚠️ This will permanently delete the album and all its photos. This action cannot be undone.
+                    </p>
+                </div>
+                <div
+                    style="padding: var(--space-6); border-top: var(--border-width) solid var(--color-gray-200); display: flex; gap: var(--space-3); justify-content: flex-end;">
+                    <button @click="confirmDeleteOpen = false" class="btn btn-secondary">
+                        Cancel
+                    </button>
+                    <button
+                        @click="document.querySelector('#delete-form-' + deleteAlbumId).dispatchEvent(new Event('submit', {bubbles: true, cancelable: true})); confirmDeleteOpen = false"
+                        class="btn btn-danger">
+                        Delete Album
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal" x-data="{ modalOpen: false }" x-show="modalOpen" @click.self="modalOpen = false"
+        @close-modal.window="modalOpen = false" style="display: none;" x-cloak>
+        <div class="modal-backdrop" @click="modalOpen = false"></div>
+        <div class="modal-content" @click.stop>
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Album</h2>
+                <button @click="modalOpen = false" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" @htmx:after-swap="modalOpen = true">
+                <!-- Edit form will be loaded here -->
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+{{end}}

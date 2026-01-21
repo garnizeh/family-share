@@ -1,0 +1,63 @@
+{{define "admin_dashboard.html"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - FamilyShare Admin</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body>
+    <a href="#main-content" class="skip-to-main">Skip to main content</a>
+
+    {{template "admin_nav.html" .}}
+
+    <main id="main-content" class="admin-content">
+        <h1 class="page-title">Dashboard</h1>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Albums</h2>
+                    <p class="stat-number">{{.AlbumCount}}</p>
+                    <a href="/admin/albums" class="btn btn-primary">Manage Albums</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Photos</h2>
+                    <p class="stat-number">{{.PhotoCount}}</p>
+                    <p class="text-muted mb-0">Across all albums</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Storage</h2>
+                    <p class="stat-number">{{printf "%.2f" .StorageMB}} <span class="text-muted"
+                            style="font-size: 1rem;">MB</span></p>
+                    <p class="text-muted mb-0">Total storage used</p>
+                </div>
+            </div>
+        </div>
+
+        {{if not .HasAlbums}}
+        <div class="empty-state mt-8">
+            <div class="empty-state-icon">🎉</div>
+            <h2 class="empty-state-title">Welcome to FamilyShare!</h2>
+            <p class="empty-state-description">
+                Start by creating your first album and uploading photos to share with your family.
+            </p>
+            <a href="/admin/albums?action=create" class="btn btn-primary btn-lg">Create Your First Album</a>
+        </div>
+        {{end}}
+    </main>
+</body>
+
+</html>
+{{end}}

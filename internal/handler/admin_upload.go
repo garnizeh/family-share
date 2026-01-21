@@ -34,7 +34,6 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	// Total upload limit (100MB)
 	const maxTotal = int64(100 << 20)
 	r.Body = http.MaxBytesReader(w, r.Body, maxTotal)

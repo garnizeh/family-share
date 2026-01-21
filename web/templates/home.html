@@ -1,0 +1,128 @@
+{{define "home.html"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FamilyShare - Share Your Memories</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <div style="min-height: 100vh; display: flex; flex-direction: column;">
+        <!-- Navigation -->
+        <nav class="admin-nav">
+            <div class="admin-nav-container">
+                <div class="admin-nav-brand">
+                    <h1>📸 FamilyShare</h1>
+                </div>
+                <ul class="admin-nav-menu" style="display: flex;">
+                    <li><a href="/admin">Admin</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <main
+            style="flex: 1; display: flex; align-items: center; justify-content: center; padding: var(--space-8) var(--space-4);">
+            <div style="max-width: 800px; text-align: center;">
+                <div style="font-size: 5rem; margin-bottom: var(--space-6);">📸</div>
+
+                <h1
+                    style="font-size: var(--font-size-4xl); font-weight: var(--font-weight-bold); color: var(--color-gray-900); margin-bottom: var(--space-4);">
+                    Share Your Family Memories
+                </h1>
+
+                <p
+                    style="font-size: var(--font-size-xl); color: var(--color-gray-600); margin-bottom: var(--space-8); line-height: var(--line-height-relaxed);">
+                    A simple, self-hosted photo sharing platform designed for families.
+                    Create albums, share photos, and keep your precious memories safe.
+                </p>
+
+                <div class="card" style="text-align: left; margin-bottom: var(--space-8);">
+                    <div class="card-body">
+                        <h2
+                            style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-6); text-align: center;">
+                            Features
+                        </h2>
+
+                        <div style="display: grid; grid-template-columns: 1fr; gap: var(--space-6);">
+                            <div style="display: flex; gap: var(--space-4);">
+                                <div style="font-size: var(--font-size-3xl); flex-shrink: 0;">📁</div>
+                                <div>
+                                    <h3
+                                        style="font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-2);">
+                                        Organize in Albums
+                                    </h3>
+                                    <p style="color: var(--color-gray-600); font-size: var(--font-size-sm);">
+                                        Create beautiful albums to organize your photos by events, trips, or any
+                                        occasion.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: var(--space-4);">
+                                <div style="font-size: var(--font-size-3xl); flex-shrink: 0;">🔗</div>
+                                <div>
+                                    <h3
+                                        style="font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-2);">
+                                        Share with Magic Links
+                                    </h3>
+                                    <p style="color: var(--color-gray-600); font-size: var(--font-size-sm);">
+                                        Generate secure, expiring links to share albums with family members. No account
+                                        required for viewers.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: var(--space-4);">
+                                <div style="font-size: var(--font-size-3xl); flex-shrink: 0;">🔒</div>
+                                <div>
+                                    <h3
+                                        style="font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-2);">
+                                        Private & Secure
+                                    </h3>
+                                    <p style="color: var(--color-gray-600); font-size: var(--font-size-sm);">
+                                        Self-hosted on your own server. Your photos, your control. No third-party
+                                        access.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: var(--space-4);">
+                                <div style="font-size: var(--font-size-3xl); flex-shrink: 0;">⚡</div>
+                                <div>
+                                    <h3
+                                        style="font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-2);">
+                                        Lightweight & Fast
+                                    </h3>
+                                    <p style="color: var(--color-gray-600); font-size: var(--font-size-sm);">
+                                        Optimized for low-resource servers. Automatic image optimization saves storage.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap;">
+                    <a href="/admin" class="btn btn-primary btn-lg">
+                        Go to Admin Panel
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer
+            style="background: var(--color-gray-100); padding: var(--space-6) var(--space-4); text-align: center; border-top: var(--border-width) solid var(--color-gray-200);">
+            <p style="color: var(--color-gray-600); font-size: var(--font-size-sm); margin: 0;">
+                FamilyShare - A simple, self-hosted photo sharing platform for families
+            </p>
+        </footer>
+    </div>
+</body>
+
+</html>
+{{end}}

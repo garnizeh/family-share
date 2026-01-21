@@ -1,7 +1,8 @@
 package handler
 
 import (
-	"fmt"
+	"io/fs"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -14,9 +15,16 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 	// Health check
 	r.Get("/health", h.HealthCheck)
 
-	// Static files
-	r.Handle("/static/*", http.StripPrefix("/static/",
-		http.FileServer(http.FS(h.embedFS))))
+	// Static files (serve from embedded static/ subdirectory)
+	if sub, err := fs.Sub(h.embedFS, "static"); err == nil {
+		r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
+	} else {
+		// fall back to the root FS if sub doesn't exist
+		r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(h.embedFS))))
+	}
+
+	// Serve photo files from data/photos directory
+	r.Get("/data/photos/{id}.webp", h.ServePhoto)
 
 	// Public routes
 	r.Get("/", h.HomePage)
@@ -35,12 +43,20 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 		r.Get("/", h.AdminDashboard)
 		r.Get("/albums", h.ListAlbums)
 
-		// Album management (will be implemented in task 060)
-		r.Post("/albums", h.NotImplementedYet)
-		r.Get("/albums/{id}", h.NotImplementedYet)
+		// Album management
+		r.Post("/albums", h.CreateAlbum)
+		r.Get("/albums/{id}", h.ViewAlbum)
+		r.Get("/albums/{id}/edit", h.EditAlbumForm)
+		r.Post("/albums/{id}", h.UpdateAlbum)
+		r.Put("/albums/{id}", h.UpdateAlbum)
+		r.Delete("/albums/{id}", h.DeleteAlbum)
 
 		// Photo upload
 		r.Post("/albums/{id}/photos", h.AdminUploadPhotos)
+
+		// Photo management
+		r.Delete("/photos/{id}", h.DeletePhoto)
+		r.Post("/photos/{id}/set-cover", h.SetCoverPhoto)
 	})
 }
 
@@ -51,33 +67,48 @@ func (h *Handler) NotImplementedYet(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<!DOCTYPE html>
-<html>
-<head><title>FamilyShare</title></head>
-<body>
-	<h1>FamilyShare</h1>
-	<p>Photo sharing app - Coming soon!</p>
-</body>
-</html>`))
+	if err := h.RenderTemplate(w, "home.html", nil); err != nil {
+		log.Printf("template render error for home: %v", err)
+		http.Error(w, "template render error", http.StatusInternalServerError)
+	}
 }
 
 func (h *Handler) AdminDashboard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<!DOCTYPE html>
-<html>
-<head><title>Admin Dashboard</title></head>
-<body>
-	<h1>Admin Dashboard</h1>
-	<p>Admin interface - Coming soon!</p>
-	<ul>
-		<li><a href="/admin/albums">Manage Albums</a></li>
-	</ul>
-</body>
-</html>`))
+
+	q := sqlc.New(h.db)
+
+	// Get dashboard statistics
+	albumCount, _ := q.CountAlbums(r.Context())
+	photoCount, _ := q.CountPhotos(r.Context())
+	storageBytes, _ := q.GetTotalStorageBytes(r.Context())
+
+	// Convert bytes to MB
+	var storageMB float64
+	if bytesVal, ok := storageBytes.(int64); ok {
+		storageMB = float64(bytesVal) / (1024 * 1024)
+	}
+
+	data := struct {
+		AlbumCount int64
+		PhotoCount int64
+		StorageMB  float64
+		HasAlbums  bool
+	}{
+		AlbumCount: albumCount,
+		PhotoCount: photoCount,
+		StorageMB:  storageMB,
+		HasAlbums:  albumCount > 0,
+	}
+
+	if err := h.RenderTemplate(w, "admin_dashboard.html", data); err != nil {
+		log.Printf("template render error for admin_dashboard: %v", err)
+		http.Error(w, "template render error", http.StatusInternalServerError)
+	}
 }
 
 func (h *Handler) ListAlbums(w http.ResponseWriter, r *http.Request) {
-	albums, err := h.queries.ListAlbums(r.Context(), sqlc.ListAlbumsParams{
+	albums, err := h.queries.ListAlbumsWithPhotoCount(r.Context(), sqlc.ListAlbumsWithPhotoCountParams{
 		Limit:  100,
 		Offset: 0,
 	})
@@ -86,15 +117,12 @@ func (h *Handler) ListAlbums(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Simple HTML output for now (proper templates in task 060)
+	// Render albums list using the admin layout and a dynamic content fragment
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<!DOCTYPE html>
-<html>
-<head><title>Albums</title></head>
-<body>
-	<h1>Albums</h1>
-	<p>Albums loaded: ` + fmt.Sprintf("%d", len(albums)) + `</p>
-	<a href="/admin">Back to Dashboard</a>
-</body>
-</html>`))
+	if err := h.RenderTemplate(w, "albums_list.html", albums); err != nil {
+		// Log template error for debugging
+		log.Printf("template render error for albums_list: %v", err)
+		http.Error(w, "template render error", http.StatusInternalServerError)
+		return
+	}
 }

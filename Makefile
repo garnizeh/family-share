@@ -6,7 +6,7 @@
 #   make clean-local-branches       # delete local branches merged into origin/main
 #   make clean-local-branches-force # force-delete local branches merged into origin/main
 
-.PHONY: help clean-local-branches clean-local-branches-dry clean-local-branches-force
+.PHONY: help clean-local-branches clean-local-branches-dry clean-local-branches-force build run-local
 
 DEFAULT_BRANCH ?= main
 REMOTE ?= origin
@@ -16,7 +16,29 @@ help:
 	@echo
 	@echo "  clean-local-branches-dry   - show local branches merged into $(REMOTE)/$(DEFAULT_BRANCH) (dry run)"
 	@echo "  clean-local-branches       - delete local branches merged into $(REMOTE)/$(DEFAULT_BRANCH) (safe delete -\d)"
-	@echo "  clean-local-branches-force - force delete local branches merged into $(REMOTE)/$(DEFAULT_BRANCH) (\-D)"
+	@echo "  clean-local-branches-force - force-delete local branches merged into $(REMOTE)/$(DEFAULT_BRANCH) (\-D)"
+	@echo "  build                      - compile binary to bin/familyshare"
+	@echo "  run-local                  - build and run locally (PORT, TEMP_UPLOAD_DIR env vars supported)"
+
+# Build and run helpers for local testing
+# Usage:
+#   make build         # compile binary to bin/familyshare
+#   make run-local     # build then run with sensible defaults (PORT=8080, TEMP_UPLOAD_DIR=./tmp_uploads)
+
+BINARY ?= bin/familyshare
+MAIN_PKG ?= ./cmd/app
+PORT ?= 8080
+TEMP_UPLOAD_DIR ?= $(CURDIR)/tmp_uploads
+
+build:
+	@echo "Building $(BINARY) from $(MAIN_PKG)..."
+	@mkdir -p $(dir $(BINARY))
+	@go build -o $(BINARY) $(MAIN_PKG)
+
+run-local: build
+	@echo "Preparing local temp upload dir: $(TEMP_UPLOAD_DIR)"
+	@mkdir -p $(TEMP_UPLOAD_DIR)
+	@PORT=$(PORT) TEMP_UPLOAD_DIR=$(TEMP_UPLOAD_DIR) $(BINARY)
 
 # Dry run: list branches merged into remote default branch, exclude protected names
 clean-local-branches-dry:

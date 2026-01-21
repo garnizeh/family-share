@@ -9,6 +9,17 @@ import (
 	"context"
 )
 
+const countPhotos = `-- name: CountPhotos :one
+SELECT COUNT(*) FROM photos
+`
+
+func (q *Queries) CountPhotos(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countPhotos)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createPhoto = `-- name: CreatePhoto :one
 INSERT INTO photos (album_id, filename, width, height, size_bytes, format)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -74,6 +85,17 @@ func (q *Queries) GetPhoto(ctx context.Context, id int64) (Photo, error) {
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getTotalStorageBytes = `-- name: GetTotalStorageBytes :one
+SELECT COALESCE(SUM(size_bytes), 0) FROM photos
+`
+
+func (q *Queries) GetTotalStorageBytes(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getTotalStorageBytes)
+	var coalesce interface{}
+	err := row.Scan(&coalesce)
+	return coalesce, err
 }
 
 const listPhotosByAlbum = `-- name: ListPhotosByAlbum :many
