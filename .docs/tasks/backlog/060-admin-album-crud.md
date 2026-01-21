@@ -10,12 +10,12 @@
 Implement album CRUD operations: create, list, view, update, and delete albums. Use server-side rendering with HTMX for dynamic updates.
 
 ## Acceptance Criteria
-- [ ] `GET /admin/albums` — list all albums with cover thumbnails
-- [ ] `POST /admin/albums` — create new album
-- [ ] `GET /admin/albums/{id}` — view album details and photos
-- [ ] `POST /admin/albums/{id}` — update album (title, description, cover)
-- [ ] `DELETE /admin/albums/{id}` — delete album and cascade photos
-- [ ] HTMX partials for create/update forms and album rows
+- [x] `GET /admin/albums` — list all albums with cover thumbnails
+- [x] `POST /admin/albums` — create new album
+- [x] `GET /admin/albums/{id}` — view album details and photos
+- [x] `POST /admin/albums/{id}` — update album (title, description, cover)
+- [x] `DELETE /admin/albums/{id}` — delete album and cascade photos
+- [x] HTMX partials for create/update forms and album rows
 
 ## Files to Add/Modify
 - `internal/handler/admin_albums.go` — album CRUD handlers
@@ -40,18 +40,18 @@ func (h *Handler) DeleteAlbum(w http.ResponseWriter, r *http.Request)
 - **album_detail.html**: Album header + photo grid
 
 ## Tests Required
-- [ ] Integration test: create album via POST
-- [ ] Integration test: list albums returns created albums
-- [ ] Integration test: update album title
-- [ ] Integration test: delete album cascades to photos
-- [ ] Unit test: form validation (empty title)
+- [x] Integration test: create album via POST
+- [x] Integration test: list albums returns created albums
+- [x] Integration test: update album title
+- [x] Integration test: delete album cascades to photos
+- [x] Unit test: form validation (empty title)
 
 ## PR Checklist
-- [ ] All CRUD operations use sqlc queries
-- [ ] HTMX responses return partials, not full pages
-- [ ] Delete confirmation implemented (client-side or modal)
-- [ ] Empty state shown when no albums exist
-- [ ] Tests pass: `go test ./internal/handler/... -v`
+- [x] All CRUD operations use sqlc queries
+- [x] HTMX responses return partials, not full pages
+- [x] Delete confirmation implemented (client-side or modal)
+- [x] Empty state shown when no albums exist
+- [x] Tests pass: `go test ./internal/handler/... -v`
 
 ## Git Workflow
 ```bash

@@ -99,7 +99,7 @@ func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
 		t.Fatalf("single upload status: %d", res.StatusCode)
 	}
 	buf := w.Body.String()
-	if !strings.Contains(buf, "Uploaded (ID:") {
+	if !strings.Contains(buf, "Successfully uploaded (ID:") {
 		t.Fatalf("expected uploaded partial, got body: %s", buf)
 	}
 
@@ -136,7 +136,7 @@ func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
 	if w2.Result().StatusCode != 200 {
 		t.Fatalf("batch upload status: %d", w2.Result().StatusCode)
 	}
-	if strings.Count(w2.Body.String(), "Uploaded (ID:") < 3 {
+	if strings.Count(w2.Body.String(), "Successfully uploaded (ID:") < 3 {
 		t.Fatalf("expected 3 uploaded partials, got: %s", w2.Body.String())
 	}
 
@@ -158,7 +158,7 @@ func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
 	if w3.Result().StatusCode != 200 {
 		t.Fatalf("invalid upload status: %d", w3.Result().StatusCode)
 	}
-	if !strings.Contains(w3.Body.String(), "Failed:") {
+	if !strings.Contains(w3.Body.String(), "Error:") {
 		t.Fatalf("expected failure partial, got: %s", w3.Body.String())
 	}
 }
