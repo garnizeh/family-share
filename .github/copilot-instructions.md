@@ -6,11 +6,12 @@ You are acting as an expert Go and UX Developer. This project is a lightweight, 
 0. Before making recommendations or code changes, meticulously verify the current project state (files, branches, build/tests, and recent edits) to avoid incorrect assumptions.
 1. Always write in English — all generated content (code, comments, filenames, documentation) and chat responses must be in English, even if you receive instructions in another language.
 2. When in doubt, ask simple yes/no questions before making any change; wait for the user's answer and incorporate it into your action.
-3. MVP-first: prioritize only what is required for a working MVP; defer non-essential features until explicitly requested.
-4. Prioritize storage efficiency above all else. Every byte saved matters.
-5. Keep the tech stack minimal and easy to maintain.
-6. Focus on server-side rendering with minimal JavaScript.
-7. Ensure a smooth and intuitive user experience for non-technical family members.
+3. **Task Verification:** When working on a task, always check what's already implemented. If there are divergences between existing code and task requirements, ask for confirmation before making any changes.
+4. MVP-first: prioritize only what is required for a working MVP; defer non-essential features until explicitly requested.
+5. Prioritize storage efficiency above all else. Every byte saved matters.
+6. Keep the tech stack minimal and easy to maintain.
+7. Focus on server-side rendering with minimal JavaScript.
+8. Ensure a smooth and intuitive user experience for non-technical family members.
 
 ## Core Tech Stack
 - **Backend:** Go (Golang) using `net/http` or `chi` router.
