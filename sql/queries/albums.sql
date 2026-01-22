@@ -50,3 +50,8 @@ FROM albums a
 LEFT JOIN photos p ON p.album_id = a.id
 WHERE a.id = ?
 GROUP BY a.id;
+
+-- name: ClearAlbumCoverIfPhoto :exec
+UPDATE albums
+SET cover_photo_id = NULL, updated_at = CURRENT_TIMESTAMP
+WHERE cover_photo_id = ?;

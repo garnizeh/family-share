@@ -173,9 +173,39 @@ func (h *Handler) DeleteAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For HTMX delete, return 200 with empty body so HTMX will replace the
-	// target element with nothing (effectively removing it from the DOM).
+	// For HTMX delete, check if there are any remaining albums
 	if IsHTMX(r) {
+		count, err := q.CountAlbums(ctx)
+		if err != nil {
+			http.Error(w, "failed to check remaining albums", http.StatusInternalServerError)
+			return
+		}
+
+		// If no albums remain, return the empty state
+		if count == 0 {
+			w.Header().Set("HX-Retarget", "#albums-section")
+			w.Header().Set("HX-Reswap", "innerHTML")
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			// Render the empty state
+			_, _ = w.Write([]byte(`
+			<div id="albums-grid" class="grid-albums" style="display: none;"></div>
+			<div class="empty-state">
+				<div class="empty-state-icon">📁</div>
+				<h2 class="empty-state-title">No Albums Yet</h2>
+				<p class="empty-state-description">
+					Create your first album to start organizing and sharing your photos with family.
+				</p>
+				<div class="flex gap-4 justify-center">
+					<button @click="showForm = true" class="btn btn-primary btn-lg">+ New Album</button>
+					<a href="/admin" class="btn btn-secondary btn-lg">← Back to Dashboard</a>
+				</div>
+			</div>
+			`))
+			return
+		}
+
+		// Otherwise, just remove the album card from DOM
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		return

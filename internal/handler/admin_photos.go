@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -28,6 +29,12 @@ func (h *Handler) DeletePhoto(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "photo not found", http.StatusNotFound)
 		return
+	}
+
+	// Clear album cover if this photo is the cover
+	if err := q.ClearAlbumCoverIfPhoto(r.Context(), sql.NullInt64{Int64: id, Valid: true}); err != nil {
+		log.Printf("failed to clear album cover: %v", err)
+		// Continue with deletion even if this fails
 	}
 
 	// Delete photo from database
