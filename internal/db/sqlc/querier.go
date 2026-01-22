@@ -14,6 +14,7 @@ type Querier interface {
 	CountAlbums(ctx context.Context) (int64, error)
 	CountPhotos(ctx context.Context) (int64, error)
 	CountShareLinks(ctx context.Context) (int64, error)
+	CountUniqueShareLinkViews(ctx context.Context, shareLinkID int64) (int64, error)
 	CreateActivityEvent(ctx context.Context, arg CreateActivityEventParams) error
 	CreateAlbum(ctx context.Context, arg CreateAlbumParams) (Album, error)
 	CreatePhoto(ctx context.Context, arg CreatePhotoParams) (Photo, error)

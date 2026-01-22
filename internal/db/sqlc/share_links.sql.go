@@ -21,6 +21,17 @@ func (q *Queries) CountShareLinks(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countUniqueShareLinkViews = `-- name: CountUniqueShareLinkViews :one
+SELECT COUNT(DISTINCT viewer_hash) FROM share_link_views WHERE share_link_id = ?
+`
+
+func (q *Queries) CountUniqueShareLinkViews(ctx context.Context, shareLinkID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUniqueShareLinkViews, shareLinkID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createShareLink = `-- name: CreateShareLink :one
 INSERT INTO share_links (token, target_type, target_id, max_views, expires_at)
 VALUES (?, ?, ?, ?, ?)
@@ -98,7 +109,7 @@ func (q *Queries) GetShareLinkByToken(ctx context.Context, token string) (ShareL
 }
 
 const incrementShareLinkView = `-- name: IncrementShareLinkView :exec
-INSERT INTO share_link_views (share_link_id, viewer_hash) VALUES (?, ?)
+INSERT OR IGNORE INTO share_link_views (share_link_id, viewer_hash) VALUES (?, ?)
 `
 
 type IncrementShareLinkViewParams struct {
