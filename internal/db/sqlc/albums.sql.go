@@ -10,6 +10,17 @@ import (
 	"database/sql"
 )
 
+const clearAlbumCoverIfPhoto = `-- name: ClearAlbumCoverIfPhoto :exec
+UPDATE albums
+SET cover_photo_id = NULL, updated_at = CURRENT_TIMESTAMP
+WHERE cover_photo_id = ?
+`
+
+func (q *Queries) ClearAlbumCoverIfPhoto(ctx context.Context, coverPhotoID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, clearAlbumCoverIfPhoto, coverPhotoID)
+	return err
+}
+
 const countAlbums = `-- name: CountAlbums :one
 SELECT COUNT(*) FROM albums
 `

@@ -6,9 +6,11 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 )
 
 type Querier interface {
+	ClearAlbumCoverIfPhoto(ctx context.Context, coverPhotoID sql.NullInt64) error
 	CountAlbums(ctx context.Context) (int64, error)
 	CountPhotos(ctx context.Context) (int64, error)
 	CreateActivityEvent(ctx context.Context, arg CreateActivityEventParams) error

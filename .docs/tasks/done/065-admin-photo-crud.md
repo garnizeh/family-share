@@ -71,6 +71,4 @@ git push origin feat/admin-photos
 
 ## Notes
 - For MVP, no photo editing (crop, rotate) — accept as-is
-- Consider soft-delete for safety (add `deleted_at` column) — defer to post-MVP
-- HTMX `hx-confirm` for delete confirmation
 - Log file deletion failures but don't block DB deletion
