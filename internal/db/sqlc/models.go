@@ -6,6 +6,7 @@ package sqlc
 
 import (
 	"database/sql"
+	"time"
 )
 
 type ActivityEvent struct {
@@ -40,6 +41,13 @@ type Photo struct {
 type SchemaMigration struct {
 	Version   int64        `json:"version"`
 	AppliedAt sql.NullTime `json:"applied_at"`
+}
+
+type Session struct {
+	ID        string       `json:"id"`
+	UserID    string       `json:"user_id"`
+	ExpiresAt time.Time    `json:"expires_at"`
+	CreatedAt sql.NullTime `json:"created_at"`
 }
 
 type ShareLink struct {

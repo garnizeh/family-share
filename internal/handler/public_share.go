@@ -76,11 +76,12 @@ func (h *Handler) ViewShareLink(w http.ResponseWriter, r *http.Request) {
 	security.SetViewerHashCookie(w, token, viewerHash, &link.ExpiresAt.Time)
 
 	// 8. Render content based on target type
-	if link.TargetType == "album" {
+	switch link.TargetType {
+	case "album":
 		h.renderShareAlbum(w, r, link)
-	} else if link.TargetType == "photo" {
+	case "photo":
 		h.renderSharePhoto(w, r, link)
-	} else {
+	default:
 		h.renderShareExpired(w, "Invalid share link type", http.StatusBadRequest)
 	}
 }

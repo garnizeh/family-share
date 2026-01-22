@@ -7,7 +7,25 @@ This repository contains the backend and SSR frontend for FamilyShare. See `.doc
 Quick start:
 
 1. Copy `.env.example` to `.env` and fill values.
-2. Build and run:
+2. Generate admin password hash:
+
+```bash
+make hash-password PASSWORD=YourSecurePassword123
+```
+
+Or manually:
+
+```bash
+go run scripts/hash_password.go YourSecurePassword123
+```
+
+3. Add the generated hash to your environment:
+
+```bash
+export ADMIN_PASSWORD_HASH='$2a$12$...'
+```
+
+4. Build and run:
 
 ```bash
 go build -o familyshare ./cmd/app

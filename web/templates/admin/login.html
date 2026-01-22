@@ -1,0 +1,66 @@
+{{define "login.html"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - FamilyShare</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body
+    style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--color-gray-50);">
+    <div
+        style="width: 100%; max-width: 400px; padding: var(--space-8); background: white; border-radius: var(--radius-lg); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="text-align: center; margin-bottom: var(--space-6);">
+            <div style="font-size: 3rem; margin-bottom: var(--space-3);">🔐</div>
+            <h1 style="font-size: var(--font-size-2xl); color: var(--color-gray-900); margin: 0;">
+                Admin Login
+            </h1>
+            <p style="color: var(--color-gray-600); margin-top: var(--space-2);">
+                FamilyShare Administration
+            </p>
+        </div>
+
+        {{if .Error}}
+        <div
+            style="background: var(--color-error-bg, #fee); border: 1px solid var(--color-error, #c00); color: var(--color-error, #c00); padding: var(--space-3); border-radius: var(--radius-sm); margin-bottom: var(--space-4); font-size: var(--font-size-sm);">
+            {{if eq .Error "invalid_password"}}
+            ❌ Invalid password. Please try again.
+            {{else if eq .Error "password_required"}}
+            ⚠️ Password is required.
+            {{else if eq .Error "invalid_request"}}
+            ⚠️ Invalid request. Please try again.
+            {{else}}
+            ⚠️ An error occurred. Please try again.
+            {{end}}
+        </div>
+        {{end}}
+
+        <form method="POST" action="/admin/login">
+            <div style="margin-bottom: var(--space-4);">
+                <label for="password"
+                    style="display: block; font-weight: 600; margin-bottom: var(--space-2); color: var(--color-gray-700);">
+                    Password
+                </label>
+                <input type="password" id="password" name="password" required autofocus
+                    style="width: 100%; padding: var(--space-3); border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm); font-size: var(--font-size-base);"
+                    placeholder="Enter admin password">
+            </div>
+
+            <button type="submit" class="btn btn-primary"
+                style="width: 100%; padding: var(--space-3); font-size: var(--font-size-base);">
+                Sign In
+            </button>
+        </form>
+
+        <p
+            style="text-align: center; color: var(--color-gray-500); font-size: var(--font-size-sm); margin-top: var(--space-6);">
+            For security, sessions expire after 24 hours.
+        </p>
+    </div>
+</body>
+
+</html>
+{{end}}

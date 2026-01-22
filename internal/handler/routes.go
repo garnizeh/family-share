@@ -52,31 +52,42 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 			TemplateRenderer:  h,
 		})
 		r.Use(adminLimiter.Middleware())
-		// Apply admin auth middleware (stub)
-		r.Use(middleware.AdminOnly)
-		// Admin pages
-		r.Get("/", h.AdminDashboard)
-		r.Get("/albums", h.ListAlbums)
 
-		// Album management
-		r.Post("/albums", h.CreateAlbum)
-		r.Get("/albums/{id}", h.ViewAlbum)
-		r.Get("/albums/{id}/edit", h.EditAlbumForm)
-		r.Post("/albums/{id}", h.UpdateAlbum)
-		r.Put("/albums/{id}", h.UpdateAlbum)
-		r.Delete("/albums/{id}", h.DeleteAlbum)
+		// Login routes (not protected)
+		r.Get("/login", h.LoginPage)
+		r.Post("/login", h.Login)
 
-		// Photo upload
-		r.Post("/albums/{id}/photos", h.AdminUploadPhotos)
+		// Protected admin routes
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequireAuth(h.db))
 
-		// Photo management
-		r.Delete("/photos/{id}", h.DeletePhoto)
-		r.Post("/photos/{id}/set-cover", h.SetCoverPhoto)
+			// Logout
+			r.Post("/logout", h.Logout)
 
-		// Share link management
-		r.Get("/shares", h.ListShareLinks)
-		r.Post("/shares", h.CreateShareLink)
-		r.Delete("/shares/{id}", h.RevokeShareLink)
+			// Admin pages
+			r.Get("/", h.AdminDashboard)
+			r.Get("/albums", h.ListAlbums)
+
+			// Album management
+			r.Post("/albums", h.CreateAlbum)
+			r.Get("/albums/{id}", h.ViewAlbum)
+			r.Get("/albums/{id}/edit", h.EditAlbumForm)
+			r.Post("/albums/{id}", h.UpdateAlbum)
+			r.Put("/albums/{id}", h.UpdateAlbum)
+			r.Delete("/albums/{id}", h.DeleteAlbum)
+
+			// Photo upload
+			r.Post("/albums/{id}/photos", h.AdminUploadPhotos)
+
+			// Photo management
+			r.Delete("/photos/{id}", h.DeletePhoto)
+			r.Post("/photos/{id}/set-cover", h.SetCoverPhoto)
+
+			// Share link management
+			r.Get("/shares", h.ListShareLinks)
+			r.Post("/shares", h.CreateShareLink)
+			r.Delete("/shares/{id}", h.RevokeShareLink)
+		})
 	})
 }
 

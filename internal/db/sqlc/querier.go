@@ -18,12 +18,17 @@ type Querier interface {
 	CreateActivityEvent(ctx context.Context, arg CreateActivityEventParams) error
 	CreateAlbum(ctx context.Context, arg CreateAlbumParams) (Album, error)
 	CreatePhoto(ctx context.Context, arg CreatePhotoParams) (Photo, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateShareLink(ctx context.Context, arg CreateShareLinkParams) (ShareLink, error)
 	DeleteAlbum(ctx context.Context, id int64) error
+	DeleteExpiredSessions(ctx context.Context) error
 	DeletePhoto(ctx context.Context, id int64) error
+	DeleteSession(ctx context.Context, id string) error
+	DeleteUserSessions(ctx context.Context, userID string) error
 	GetAlbum(ctx context.Context, id int64) (Album, error)
 	GetAlbumWithPhotoCount(ctx context.Context, id int64) (GetAlbumWithPhotoCountRow, error)
 	GetPhoto(ctx context.Context, id int64) (Photo, error)
+	GetSession(ctx context.Context, id string) (Session, error)
 	GetShareLink(ctx context.Context, id int64) (ShareLink, error)
 	GetShareLinkByToken(ctx context.Context, token string) (ShareLink, error)
 	GetTotalStorageBytes(ctx context.Context) (interface{}, error)
