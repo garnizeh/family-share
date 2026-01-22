@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+"familyshare/internal/config"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -26,7 +27,7 @@ func TestCreateAndListAndUpdateAndDeleteAlbum(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 	q := sqlc.New(dbConn)
 
 	// Create album via handler
@@ -109,7 +110,7 @@ func TestCreateAlbumValidation(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	// Missing title -> bad request
 	vals := url.Values{}

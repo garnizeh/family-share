@@ -1,0 +1,36 @@
+{{define "rate_limit.html"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Too Many Requests - FamilyShare</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body
+    style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--color-gray-50);">
+    <div style="text-align: center; max-width: 500px; padding: var(--space-8);">
+        <div style="font-size: 4rem; margin-bottom: var(--space-4);">⏱️</div>
+        <h1 style="font-size: var(--font-size-2xl); color: var(--color-gray-900); margin-bottom: var(--space-3);">
+            Too Many Requests
+        </h1>
+        <p style="font-size: var(--font-size-lg); color: var(--color-gray-600); margin-bottom: var(--space-6);">
+            You've made too many requests in a short period. Please slow down and try again in a moment.
+        </p>
+        <p style="font-size: var(--font-size-sm); color: var(--color-gray-500); margin-bottom: var(--space-2);">
+            {{if .RetryAfter}}
+            Please wait approximately <strong>{{.RetryAfter}} seconds</strong> before trying again.
+            {{else}}
+            Please wait a moment before trying again.
+            {{end}}
+        </p>
+        <p style="font-size: var(--font-size-xs); color: var(--color-gray-400); margin-top: var(--space-6);">
+            This restriction is in place to protect the service from abuse.
+        </p>
+    </div>
+</body>
+
+</html>
+{{end}}

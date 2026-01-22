@@ -11,7 +11,7 @@ import (
 // PhotoPath returns the storage path for a photo using layout:
 // {baseDir}/photos/{yyyy}/{mm}/{album_id}/{photo_id}.{ext}
 func PhotoPath(baseDir string, albumID, photoID int64, format string) string {
-	t := time.Now()
+	t := time.Now().UTC()
 	year := t.Format("2006")
 	month := t.Format("01")
 	ext := strings.ToLower(strings.TrimPrefix(format, "."))

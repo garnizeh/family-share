@@ -44,6 +44,7 @@ You are acting as an expert Go and UX Developer. This project is a lightweight, 
 - Use `internal/` folder pattern for core logic.
 - Prefer `context.Context` for cancellation and timeouts.
 - Use `fs.FS` to embed templates and static assets into the Go binary.
+- **Time Handling:** Always use UTC for all timestamps and dates. Never use `time.Local` or `time.Now()` without `.UTC()`. Parse dates with `time.Parse()` (which defaults to UTC) or explicitly use `time.ParseInLocation(..., time.UTC)`. Store all times in the database as UTC. Only convert to local timezone in the presentation layer (templates) if needed.
 
 ## UI/UX Guidelines
 - **Mobile First:** Family members will likely access via phones.
