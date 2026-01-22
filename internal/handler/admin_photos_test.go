@@ -1,7 +1,6 @@
 package handler_test
 
 import (
-"familyshare/internal/config"
 	"context"
 	"database/sql"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"familyshare/internal/config"
 	"familyshare/internal/db"
 	"familyshare/internal/db/sqlc"
 	"familyshare/internal/handler"

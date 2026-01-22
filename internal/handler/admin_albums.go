@@ -122,16 +122,47 @@ func (h *Handler) UpdateAlbum(w http.ResponseWriter, r *http.Request) {
 	}
 
 	q := sqlc.New(h.db)
-	err = q.UpdateAlbum(r.Context(), sqlc.UpdateAlbumParams{Title: title, Description: sql.NullString{String: desc, Valid: desc != ""}, CoverPhotoID: sql.NullInt64{}, ID: id})
+
+	// Get current album to preserve cover photo
+	currentAlbum, err := q.GetAlbum(r.Context(), id)
+	if err != nil {
+		http.Error(w, "album not found", http.StatusNotFound)
+		return
+	}
+
+	err = q.UpdateAlbum(r.Context(), sqlc.UpdateAlbumParams{
+		Title:        title,
+		Description:  sql.NullString{String: desc, Valid: desc != ""},
+		CoverPhotoID: currentAlbum.CoverPhotoID, // Preserve existing cover photo
+		ID:           id,
+	})
 	if err != nil {
 		http.Error(w, "failed to update", http.StatusInternalServerError)
 		return
 	}
 
 	if IsHTMX(r) {
-		alb, _ := q.GetAlbum(r.Context(), id)
+		// Get album with photo count for proper rendering
+		albums, err := q.ListAlbumsWithPhotoCount(r.Context(), sqlc.ListAlbumsWithPhotoCountParams{
+			Limit:  1000,
+			Offset: 0,
+		})
+		if err != nil {
+			http.Error(w, "failed to get album", http.StatusInternalServerError)
+			return
+		}
+
+		// Find the updated album in the list
+		var updatedAlbum sqlc.ListAlbumsWithPhotoCountRow
+		for _, alb := range albums {
+			if alb.ID == id {
+				updatedAlbum = alb
+				break
+			}
+		}
+
 		w.Header().Set("HX-Trigger", "closeModal")
-		_ = h.RenderTemplate(w, "album_row.html", alb)
+		_ = h.RenderTemplate(w, "album_row.html", updatedAlbum)
 		return
 	}
 	http.Redirect(w, r, "/admin/albums", http.StatusSeeOther)

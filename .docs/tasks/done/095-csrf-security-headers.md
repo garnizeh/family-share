@@ -1,4 +1,5 @@
 # Task 095: Security — CSRF Protection and Headers
+# nao vamos fazer por enquanto
 
 **Milestone:** Security & Ops  
 **Points:** 1 (4 hours)  

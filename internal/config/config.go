@@ -3,6 +3,8 @@ package config
 import (
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -19,6 +21,9 @@ type Config struct {
 }
 
 func Load() *Config {
+	// Load .env file if it exists (ignore error if file doesn't exist)
+	_ = godotenv.Load()
+		
 	return &Config{
 		ServerAddr:        getEnv("SERVER_ADDR", ":8080"),
 		DatabasePath:      getEnv("DATABASE_PATH", "./data/familyshare.db"),
