@@ -1,0 +1,45 @@
+{{define "share_row.html"}}
+<tr id="share-{{.Share.ID}}">
+    <td>
+        <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <code class="text-xs">{{.Share.Token}}</code>
+            <div style="display: flex; gap: var(--space-2); align-items: center;">
+                <input type="text" readonly value="{{.BaseURL}}/s/{{.Share.Token}}" class="form-input text-xs"
+                    style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" onclick="this.select()">
+                <button onclick="copyToClipboard('{{.BaseURL}}/s/{{.Share.Token}}')" class="btn btn-sm"
+                    title="Copy URL">📋</button>
+            </div>
+        </div>
+    </td>
+    <td>{{.Share.TargetType}}</td>
+    <td>{{.Share.TargetID}}</td>
+    <td>
+        {{if .Share.MaxViews.Valid}}
+        {{.Share.MaxViews.Int64}}
+        {{else}}
+        <span class="text-muted">Unlimited</span>
+        {{end}}
+    </td>
+    <td>
+        {{if .Share.ExpiresAt.Valid}}
+        {{.Share.ExpiresAt.Time.Format "2006-01-02 15:04"}}
+        {{else}}
+        <span class="text-muted">Never</span>
+        {{end}}
+    </td>
+    <td>
+        {{if .Share.CreatedAt.Valid}}
+        {{.Share.CreatedAt.Time.Format "2006-01-02"}}
+        {{else}}
+        <span class="text-muted">Unknown</span>
+        {{end}}
+    </td>
+    <td>
+        <span class="badge badge-success">Active</span>
+    </td>
+    <td>
+        <button @click="revokeShareId = {{.Share.ID}}; confirmRevokeOpen = true"
+            class="btn btn-danger btn-sm">Revoke</button>
+    </td>
+</tr>
+{{end}}

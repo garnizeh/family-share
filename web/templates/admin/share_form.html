@@ -1,0 +1,109 @@
+{{define "share_form.html"}}
+<form hx-post="/admin/shares" hx-on::after-request="if(event.detail.successful) { window.location.reload(); }"
+    hx-indicator="#share-form-spinner" x-data="{ 
+        targetType: 'album', 
+        selectedAlbumId: '',
+        photos: {{ .Photos | len }},
+        getPhotosForAlbum(albumId) {
+            if (!albumId) return [];
+            const allPhotos = [
+                {{range .Photos}}
+                { id: {{.ID}}, albumId: {{.AlbumID}}, filename: '{{.Filename}}' },
+                {{end}}
+            ];
+            return allPhotos.filter(p => p.albumId == albumId);
+        }
+    }">
+
+    <div style="margin-bottom: var(--space-4);">
+        <label class="form-label">Target Type <span style="color: var(--color-error);">*</span></label>
+        <div style="display: flex; gap: var(--space-4);">
+            <label style="display: flex; align-items: center; gap: var(--space-2);">
+                <input type="radio" name="target_type" value="album" x-model="targetType" checked required>
+                Album
+            </label>
+            <label style="display: flex; align-items: center; gap: var(--space-2);">
+                <input type="radio" name="target_type" value="photo" x-model="targetType" required>
+                Photo
+            </label>
+        </div>
+    </div>
+
+    <div style="margin-bottom: var(--space-4);">
+        <label for="album_select" class="form-label">Album <span style="color: var(--color-error);">*</span></label>
+        <select id="album_select" x-model="selectedAlbumId" :name="targetType === 'album' ? 'target_id' : ''"
+            class="form-input" required>
+            <option value="">Select an album</option>
+            {{range .Albums}}
+            <option value="{{.ID}}">{{.Title}}</option>
+            {{end}}
+        </select>
+        <p class="form-hint">Select the album{{if .Photos}} (required for both album and photo shares){{end}}</p>
+    </div>
+
+    <div x-show="targetType === 'photo'" style="margin-bottom: var(--space-4); display: none;">
+        <label for="photo_select" class="form-label">Photo <span style="color: var(--color-error);">*</span></label>
+        <select id="photo_select" name="target_id" class="form-input" :required="targetType === 'photo'">
+            <option value="">Select a photo</option>
+            <template x-for="photo in getPhotosForAlbum(selectedAlbumId)" :key="photo.id">
+                <option :value="photo.id" x-text="'Photo ' + photo.id + ' (' + photo.filename + ')'"></option>
+            </template>
+        </select>
+        <p class="form-hint" x-show="!selectedAlbumId" style="color: var(--color-warning, #f90);">Please select an album
+            first</p>
+        <p class="form-hint" x-show="selectedAlbumId && getPhotosForAlbum(selectedAlbumId).length === 0"
+            style="color: var(--color-warning, #f90);">This album has no photos</p>
+    </div>
+
+    <div style="margin-bottom: var(--space-4);">
+        <label for="max_views" class="form-label">Max Views</label>
+        <input type="number" id="max_views" name="max_views" class="form-input" min="1" placeholder="Unlimited">
+        <p class="form-hint">Leave blank for unlimited views</p>
+    </div>
+
+    <div style="margin-bottom: var(--space-6);">
+        <label for="expires_at" class="form-label">Expires At</label>
+        <input type="datetime-local" id="expires_at" name="expires_at" class="form-input">
+        <p class="form-hint">Leave blank for no expiration</p>
+    </div>
+
+    <div id="share-form-error"
+        style="display: none; margin-bottom: var(--space-4); padding: var(--space-3); background: var(--color-error-bg, #fee); border: 1px solid var(--color-error, #f00); border-radius: var(--radius-sm, 4px); color: var(--color-error, #f00);">
+    </div>
+
+    <div style="display: flex; gap: var(--space-3); justify-content: flex-end; align-items: center;">
+        <span id="share-form-spinner" class="htmx-indicator" style="margin-right: auto;">
+            <svg style="width: 20px; height: 20px; animation: spin 1s linear infinite;" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25" />
+                <path fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    opacity="0.75" />
+            </svg>
+        </span>
+        <button type="button" @click="modalOpen = false" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Share Link</button>
+    </div>
+</form>
+
+<style>
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+<script>
+    document.body.addEventListener('htmx:responseError', function (evt) {
+        const errorDiv = document.getElementById('share-form-error');
+        if (errorDiv && evt.detail.xhr.status >= 400) {
+            errorDiv.textContent = 'Error: ' + (evt.detail.xhr.responseText || 'Failed to create share link');
+            errorDiv.style.display = 'block';
+        }
+    });
+</script>
+{{end}}

@@ -10,6 +10,17 @@ import (
 	"database/sql"
 )
 
+const countShareLinks = `-- name: CountShareLinks :one
+SELECT COUNT(*) FROM share_links
+`
+
+func (q *Queries) CountShareLinks(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countShareLinks)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createShareLink = `-- name: CreateShareLink :one
 INSERT INTO share_links (token, target_type, target_id, max_views, expires_at)
 VALUES (?, ?, ?, ?, ?)
@@ -32,6 +43,26 @@ func (q *Queries) CreateShareLink(ctx context.Context, arg CreateShareLinkParams
 		arg.MaxViews,
 		arg.ExpiresAt,
 	)
+	var i ShareLink
+	err := row.Scan(
+		&i.ID,
+		&i.Token,
+		&i.TargetType,
+		&i.TargetID,
+		&i.MaxViews,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
+const getShareLink = `-- name: GetShareLink :one
+SELECT id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at FROM share_links WHERE id = ?
+`
+
+func (q *Queries) GetShareLink(ctx context.Context, id int64) (ShareLink, error) {
+	row := q.db.QueryRowContext(ctx, getShareLink, id)
 	var i ShareLink
 	err := row.Scan(
 		&i.ID,
@@ -77,5 +108,174 @@ type IncrementShareLinkViewParams struct {
 
 func (q *Queries) IncrementShareLinkView(ctx context.Context, arg IncrementShareLinkViewParams) error {
 	_, err := q.db.ExecContext(ctx, incrementShareLinkView, arg.ShareLinkID, arg.ViewerHash)
+	return err
+}
+
+const listActiveShareLinks = `-- name: ListActiveShareLinks :many
+SELECT id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at FROM share_links
+WHERE revoked_at IS NULL
+  AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+ORDER BY created_at DESC
+LIMIT ? OFFSET ?
+`
+
+type ListActiveShareLinksParams struct {
+	Limit  int64 `json:"limit"`
+	Offset int64 `json:"offset"`
+}
+
+func (q *Queries) ListActiveShareLinks(ctx context.Context, arg ListActiveShareLinksParams) ([]ShareLink, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveShareLinks, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ShareLink{}
+	for rows.Next() {
+		var i ShareLink
+		if err := rows.Scan(
+			&i.ID,
+			&i.Token,
+			&i.TargetType,
+			&i.TargetID,
+			&i.MaxViews,
+			&i.ExpiresAt,
+			&i.CreatedAt,
+			&i.RevokedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listShareLinks = `-- name: ListShareLinks :many
+SELECT id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at FROM share_links
+ORDER BY created_at DESC
+LIMIT ? OFFSET ?
+`
+
+type ListShareLinksParams struct {
+	Limit  int64 `json:"limit"`
+	Offset int64 `json:"offset"`
+}
+
+func (q *Queries) ListShareLinks(ctx context.Context, arg ListShareLinksParams) ([]ShareLink, error) {
+	rows, err := q.db.QueryContext(ctx, listShareLinks, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ShareLink{}
+	for rows.Next() {
+		var i ShareLink
+		if err := rows.Scan(
+			&i.ID,
+			&i.Token,
+			&i.TargetType,
+			&i.TargetID,
+			&i.MaxViews,
+			&i.ExpiresAt,
+			&i.CreatedAt,
+			&i.RevokedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listShareLinksWithDetails = `-- name: ListShareLinksWithDetails :many
+SELECT 
+    sl.id, sl.token, sl.target_type, sl.target_id, sl.max_views, sl.expires_at, sl.created_at, sl.revoked_at,
+    CASE 
+        WHEN sl.target_type = 'album' THEN a.title
+        WHEN sl.target_type = 'photo' THEN (SELECT title FROM albums WHERE id = p.album_id)
+    END as target_title,
+    CASE
+        WHEN sl.target_type = 'photo' THEN p.album_id
+        ELSE NULL
+    END as photo_album_id
+FROM share_links sl
+LEFT JOIN albums a ON sl.target_type = 'album' AND sl.target_id = a.id
+LEFT JOIN photos p ON sl.target_type = 'photo' AND sl.target_id = p.id
+ORDER BY sl.created_at DESC
+LIMIT ? OFFSET ?
+`
+
+type ListShareLinksWithDetailsParams struct {
+	Limit  int64 `json:"limit"`
+	Offset int64 `json:"offset"`
+}
+
+type ListShareLinksWithDetailsRow struct {
+	ID           int64         `json:"id"`
+	Token        string        `json:"token"`
+	TargetType   string        `json:"target_type"`
+	TargetID     int64         `json:"target_id"`
+	MaxViews     sql.NullInt64 `json:"max_views"`
+	ExpiresAt    sql.NullTime  `json:"expires_at"`
+	CreatedAt    sql.NullTime  `json:"created_at"`
+	RevokedAt    sql.NullTime  `json:"revoked_at"`
+	TargetTitle  interface{}   `json:"target_title"`
+	PhotoAlbumID interface{}   `json:"photo_album_id"`
+}
+
+func (q *Queries) ListShareLinksWithDetails(ctx context.Context, arg ListShareLinksWithDetailsParams) ([]ListShareLinksWithDetailsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listShareLinksWithDetails, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListShareLinksWithDetailsRow{}
+	for rows.Next() {
+		var i ListShareLinksWithDetailsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Token,
+			&i.TargetType,
+			&i.TargetID,
+			&i.MaxViews,
+			&i.ExpiresAt,
+			&i.CreatedAt,
+			&i.RevokedAt,
+			&i.TargetTitle,
+			&i.PhotoAlbumID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const revokeShareLink = `-- name: RevokeShareLink :exec
+UPDATE share_links
+SET revoked_at = CURRENT_TIMESTAMP
+WHERE id = ?
+`
+
+func (q *Queries) RevokeShareLink(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, revokeShareLink, id)
 	return err
 }

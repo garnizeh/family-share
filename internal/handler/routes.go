@@ -57,6 +57,11 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 		// Photo management
 		r.Delete("/photos/{id}", h.DeletePhoto)
 		r.Post("/photos/{id}/set-cover", h.SetCoverPhoto)
+
+		// Share link management
+		r.Get("/shares", h.ListShareLinks)
+		r.Post("/shares", h.CreateShareLink)
+		r.Delete("/shares/{id}", h.RevokeShareLink)
 	})
 }
 
