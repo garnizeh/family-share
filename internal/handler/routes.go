@@ -31,8 +31,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 
 	// Share link routes
 	r.Route("/s", func(r chi.Router) {
-		// Will be implemented in task 080
-		r.Get("/{token}", h.NotImplementedYet)
+		r.Get("/{token}", h.ViewShareLink)
 	})
 
 	// Admin routes

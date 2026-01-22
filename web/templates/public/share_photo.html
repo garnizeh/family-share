@@ -1,0 +1,64 @@
+{{define "share_photo.html"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Photo.Filename}} - FamilyShare</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <a href="#main-content" class="skip-to-main">Skip to main content</a>
+
+    <nav style="background: var(--color-gray-800); color: white; padding: var(--space-4);">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: var(--space-3);">
+            <span style="font-size: 1.5rem;">📸</span>
+            <h1 style="font-size: var(--font-size-lg); margin: 0;">FamilyShare</h1>
+        </div>
+    </nav>
+
+    <main id="main-content"
+        style="max-width: 1200px; margin: 0 auto; padding: var(--space-6); display: flex; flex-direction: column; align-items: center;">
+
+        <header style="margin-bottom: var(--space-6); text-align: center;">
+            {{if .Album.Title}}
+            <p style="font-size: var(--font-size-sm); color: var(--color-gray-500); margin-bottom: var(--space-2);">
+                From album: <strong>{{.Album.Title}}</strong>
+            </p>
+            {{end}}
+            <h1 style="font-size: var(--font-size-2xl); color: var(--color-gray-900); margin: 0;">
+                {{.Photo.Filename}}
+            </h1>
+        </header>
+
+        <section style="width: 100%; max-width: 900px;">
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <img src="/data/photos/{{.Photo.ID}}.webp" alt="{{.Photo.Filename}}"
+                    style="width: 100%; height: auto; display: block; object-fit: contain; max-height: 80vh;">
+            </div>
+
+            <div style="margin-top: var(--space-4); text-align: center;">
+                <p style="color: var(--color-gray-600); font-size: var(--font-size-sm);">
+                    {{if .Photo.SizeBytes}}
+                    Size: {{.Photo.SizeBytes}} bytes
+                    {{end}}
+                    {{if and .Photo.Width .Photo.Height}}
+                    • {{.Photo.Width}}×{{.Photo.Height}}
+                    {{end}}
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <footer
+        style="background: var(--color-gray-100); padding: var(--space-6); margin-top: var(--space-12); text-align: center;">
+        <p style="color: var(--color-gray-600); font-size: var(--font-size-sm); margin: 0;">
+            Shared via FamilyShare 📸
+        </p>
+    </footer>
+</body>
+
+</html>
+{{end}}

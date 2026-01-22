@@ -47,4 +47,7 @@ WHERE id = ?;
 SELECT COUNT(*) FROM share_links;
 
 -- name: IncrementShareLinkView :exec
-INSERT INTO share_link_views (share_link_id, viewer_hash) VALUES (?, ?);
+INSERT OR IGNORE INTO share_link_views (share_link_id, viewer_hash) VALUES (?, ?);
+
+-- name: CountUniqueShareLinkViews :one
+SELECT COUNT(DISTINCT viewer_hash) FROM share_link_views WHERE share_link_id = ?;

@@ -1,0 +1,186 @@
+package handler
+
+import (
+	"database/sql"
+	"fmt"
+	"log"
+	"net/http"
+	"time"
+
+	"familyshare/internal/db/sqlc"
+	"familyshare/internal/security"
+
+	"github.com/go-chi/chi/v5"
+)
+
+// ViewShareLink handles public access to shared albums or photos via token
+func (h *Handler) ViewShareLink(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+	if token == "" {
+		h.renderShareExpired(w, "Invalid share link", http.StatusBadRequest)
+		return
+	}
+
+	q := sqlc.New(h.db)
+
+	// 1. Load share link
+	link, err := q.GetShareLinkByToken(r.Context(), token)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			h.renderShareExpired(w, "Share link not found", http.StatusNotFound)
+		} else {
+			log.Printf("error loading share link: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// 2. Check if revoked
+	if link.RevokedAt.Valid {
+		h.renderShareExpired(w, "This share link has been revoked", http.StatusGone)
+		return
+	}
+
+	// 3. Check expiration
+	if link.ExpiresAt.Valid && time.Now().After(link.ExpiresAt.Time) {
+		h.renderShareExpired(w, "This share link has expired", http.StatusGone)
+		return
+	}
+
+	// 4. Get or create viewer hash
+	viewerHash := security.GetViewerHash(r, token)
+
+	// 5. Check view limit (before tracking the view)
+	if link.MaxViews.Valid {
+		uniqueViews, err := q.CountUniqueShareLinkViews(r.Context(), link.ID)
+		if err != nil {
+			log.Printf("error counting views: %v", err)
+			// Continue anyway, don't block access on count error
+		} else if uniqueViews >= link.MaxViews.Int64 {
+			h.renderShareExpired(w, "This share link has reached its view limit", http.StatusGone)
+			return
+		}
+	}
+
+	// 6. Track view (INSERT OR IGNORE makes this idempotent)
+	err = q.IncrementShareLinkView(r.Context(), sqlc.IncrementShareLinkViewParams{
+		ShareLinkID: link.ID,
+		ViewerHash:  viewerHash,
+	})
+	if err != nil {
+		log.Printf("error tracking view: %v", err)
+		// Continue anyway, tracking is best-effort
+	}
+
+	// 7. Set viewer hash cookie for future visits
+	security.SetViewerHashCookie(w, token, viewerHash, &link.ExpiresAt.Time)
+
+	// 8. Render content based on target type
+	if link.TargetType == "album" {
+		h.renderShareAlbum(w, r, link)
+	} else if link.TargetType == "photo" {
+		h.renderSharePhoto(w, r, link)
+	} else {
+		h.renderShareExpired(w, "Invalid share link type", http.StatusBadRequest)
+	}
+}
+
+// renderShareAlbum renders the public album view
+func (h *Handler) renderShareAlbum(w http.ResponseWriter, r *http.Request, link sqlc.ShareLink) {
+	q := sqlc.New(h.db)
+
+	// Load album
+	album, err := q.GetAlbum(r.Context(), link.TargetID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			h.renderShareExpired(w, "Album not found", http.StatusNotFound)
+		} else {
+			log.Printf("error loading album: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Load photos
+	photos, err := q.ListPhotosByAlbum(r.Context(), sqlc.ListPhotosByAlbumParams{
+		AlbumID: album.ID,
+		Limit:   1000,
+		Offset:  0,
+	})
+	if err != nil {
+		log.Printf("error loading photos: %v", err)
+		photos = []sqlc.Photo{} // Show empty album on error
+	}
+
+	data := struct {
+		Album  sqlc.Album
+		Photos []sqlc.Photo
+		Token  string
+	}{
+		Album:  album,
+		Photos: photos,
+		Token:  link.Token,
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := h.RenderTemplate(w, "share_album.html", data); err != nil {
+		log.Printf("template render error for share_album: %v", err)
+		http.Error(w, "template render error", http.StatusInternalServerError)
+	}
+}
+
+// renderSharePhoto renders the public single photo view
+func (h *Handler) renderSharePhoto(w http.ResponseWriter, r *http.Request, link sqlc.ShareLink) {
+	q := sqlc.New(h.db)
+
+	// Load photo
+	photo, err := q.GetPhoto(r.Context(), link.TargetID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			h.renderShareExpired(w, "Photo not found", http.StatusNotFound)
+		} else {
+			log.Printf("error loading photo: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Load album info
+	album, err := q.GetAlbum(r.Context(), photo.AlbumID)
+	if err != nil {
+		log.Printf("error loading album for photo: %v", err)
+		// Continue with empty album
+	}
+
+	data := struct {
+		Photo sqlc.Photo
+		Album sqlc.Album
+		Token string
+	}{
+		Photo: photo,
+		Album: album,
+		Token: link.Token,
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := h.RenderTemplate(w, "share_photo.html", data); err != nil {
+		log.Printf("template render error for share_photo: %v", err)
+		http.Error(w, "template render error", http.StatusInternalServerError)
+	}
+}
+
+// renderShareExpired renders the error page for expired/invalid links
+func (h *Handler) renderShareExpired(w http.ResponseWriter, message string, statusCode int) {
+	data := struct {
+		Message string
+	}{
+		Message: message,
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(statusCode)
+	if err := h.RenderTemplate(w, "share_expired.html", data); err != nil {
+		log.Printf("template render error for share_expired: %v", err)
+		http.Error(w, fmt.Sprintf("Error: %s", message), statusCode)
+	}
+}
