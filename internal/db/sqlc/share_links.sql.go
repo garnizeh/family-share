@@ -220,7 +220,8 @@ SELECT
     CASE
         WHEN sl.target_type = 'photo' THEN p.album_id
         ELSE NULL
-    END as photo_album_id
+    END as photo_album_id,
+    (SELECT COUNT(DISTINCT viewer_hash) FROM share_link_views WHERE share_link_id = sl.id) as current_views
 FROM share_links sl
 LEFT JOIN albums a ON sl.target_type = 'album' AND sl.target_id = a.id
 LEFT JOIN photos p ON sl.target_type = 'photo' AND sl.target_id = p.id
@@ -244,6 +245,7 @@ type ListShareLinksWithDetailsRow struct {
 	RevokedAt    sql.NullTime  `json:"revoked_at"`
 	TargetTitle  interface{}   `json:"target_title"`
 	PhotoAlbumID interface{}   `json:"photo_album_id"`
+	CurrentViews int64         `json:"current_views"`
 }
 
 func (q *Queries) ListShareLinksWithDetails(ctx context.Context, arg ListShareLinksWithDetailsParams) ([]ListShareLinksWithDetailsRow, error) {
@@ -266,6 +268,7 @@ func (q *Queries) ListShareLinksWithDetails(ctx context.Context, arg ListShareLi
 			&i.RevokedAt,
 			&i.TargetTitle,
 			&i.PhotoAlbumID,
+			&i.CurrentViews,
 		); err != nil {
 			return nil, err
 		}

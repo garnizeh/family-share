@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+"familyshare/internal/config"
 	"context"
 	"database/sql"
 	"net/http"
@@ -27,7 +28,7 @@ func TestCreateShareLink_WithToken(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 	q := sqlc.New(dbConn)
 
 	// Create album
@@ -94,7 +95,7 @@ func TestCreateShareLink_UnlimitedViews(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 	q := sqlc.New(dbConn)
 
 	// Create album
@@ -138,7 +139,7 @@ func TestCreateShareLink_InvalidTargetType(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	vals := url.Values{}
 	vals.Set("target_type", "invalid")
@@ -162,7 +163,7 @@ func TestCreateShareLink_TargetNotFound(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	vals := url.Values{}
 	vals.Set("target_type", "album")
@@ -186,7 +187,7 @@ func TestListShareLinks_ShowsCreatedLinks(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 	q := sqlc.New(dbConn)
 
 	// Create album
@@ -230,7 +231,7 @@ func TestRevokeShareLink_SetsRevokedAt(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 	q := sqlc.New(dbConn)
 
 	// Create album
@@ -281,7 +282,7 @@ func TestRevokeShareLink_NotFound(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	req := httptest.NewRequest("DELETE", "/admin/shares/9999", nil)
 	rc := chi.NewRouteContext()
@@ -303,7 +304,7 @@ func TestCreateShareLink_ForPhoto(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 	q := sqlc.New(dbConn)
 
 	// Create album and photo

@@ -40,7 +40,7 @@ func SaveProcessedImage(
 	// generate a simple stored filename (not the full path) for record keeping
 	// use timestamp + ext
 	ext := strings.TrimPrefix(format, ".")
-	filename := fmt.Sprintf("%d.%s", time.Now().UnixNano(), ext)
+	filename := fmt.Sprintf("%d.%s", time.Now().UTC().UnixNano(), ext)
 
 	p, err := q.CreatePhoto(ctx, sqlc.CreatePhotoParams{
 		AlbumID:   albumID,

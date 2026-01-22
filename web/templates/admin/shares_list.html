@@ -27,7 +27,15 @@
 
         <div class="flex items-center justify-between mb-6">
             <h1 class="page-title">Share Links</h1>
-            <button @click="modalOpen = true" class="btn btn-primary">Create Share Link</button>
+            <div style="display: flex; gap: var(--space-3); align-items: center;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.875rem;">
+                    <input type="checkbox" {{if .ShowRevoked}}checked{{end}}
+                        onchange="window.location.href = this.checked ? '?show_revoked=true' : '/admin/shares'"
+                        style="cursor: pointer;">
+                    <span>Show revoked links</span>
+                </label>
+                <button @click="modalOpen = true" class="btn btn-primary">Create Share Link</button>
+            </div>
         </div>
 
         <section>
@@ -84,14 +92,20 @@
                             <!-- Stats -->
                             <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; font-size: 0.875rem;">
                                 <div>
-                                    <span style="color: var(--color-gray-600);">Max Views:</span>
-                                    <strong>{{if .MaxViews.Valid}}{{.MaxViews.Int64}}{{else}}∞{{end}}</strong>
+                                    <span style="color: var(--color-gray-600);">Views:</span>
+                                    <strong>
+                                        {{if .MaxViews.Valid}}
+                                        {{.CurrentViews}} / {{.MaxViews.Int64}}
+                                        {{else}}
+                                        {{.CurrentViews}} / ∞
+                                        {{end}}
+                                    </strong>
                                 </div>
                                 <div>
                                     <span style="color: var(--color-gray-600);">Expires:</span>
                                     <strong>
                                         {{if .ExpiresAt.Valid}}
-                                        {{.ExpiresAt.Time.Format "Jan 02, 2006"}}
+                                        {{.ExpiresAt.Time.Format "Jan 02, 2006 15:04"}} UTC
                                         {{else}}
                                         Never
                                         {{end}}

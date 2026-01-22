@@ -41,7 +41,7 @@ func CleanOrphanedTempFiles(maxAge time.Duration) error {
 		return err
 	}
 
-	cutoff := time.Now().Add(-maxAge)
+	cutoff := time.Now().UTC().Add(-maxAge)
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue

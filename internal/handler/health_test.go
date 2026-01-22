@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+"familyshare/internal/config"
 	"context"
 	"encoding/json"
 	"io/fs"
@@ -24,7 +25,7 @@ func TestHealthCheck_OK(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	req := httptest.NewRequest("GET", "/health", nil)
 	w := httptest.NewRecorder()
@@ -85,7 +86,7 @@ func TestGracefulShutdown(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	// Setup chi router
 	// Use a real http.Server to test Shutdown behavior

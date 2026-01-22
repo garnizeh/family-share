@@ -42,7 +42,7 @@ func (h *Handler) ViewShareLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 3. Check expiration
-	if link.ExpiresAt.Valid && time.Now().After(link.ExpiresAt.Time) {
+	if link.ExpiresAt.Valid && time.Now().UTC().After(link.ExpiresAt.Time) {
 		h.renderShareExpired(w, "This share link has expired", http.StatusGone)
 		return
 	}

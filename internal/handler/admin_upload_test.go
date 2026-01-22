@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+"familyshare/internal/config"
 	"bytes"
 	"context"
 	"database/sql"
@@ -70,7 +71,7 @@ func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
 	os.Setenv("STORAGE_PATH", tmpd)
 
 	store := storage.New(tmpd)
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	q := sqlc.New(dbConn)
 	album, err := q.CreateAlbum(context.Background(), sqlc.CreateAlbumParams{Title: "test", Description: sql.NullString{String: "", Valid: false}})
@@ -178,7 +179,7 @@ func TestAdminUpload_SizeLimitRejection(t *testing.T) {
 	os.Setenv("STORAGE_PATH", tmpd)
 
 	store := storage.New(tmpd)
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	q := sqlc.New(dbConn)
 	album, err := q.CreateAlbum(context.Background(), sqlc.CreateAlbumParams{Title: "test", Description: sql.NullString{String: "", Valid: false}})

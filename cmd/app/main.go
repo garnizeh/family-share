@@ -44,7 +44,7 @@ func main() {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	// Initialize handlers
-	h := handler.New(database, store, web.EmbedFS)
+	h := handler.New(database, store, web.EmbedFS, cfg)
 
 	// Register routes
 	h.RegisterRoutes(r)

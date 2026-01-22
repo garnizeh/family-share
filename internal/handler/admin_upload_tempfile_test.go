@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+"familyshare/internal/config"
 	"bytes"
 	"context"
 	"database/sql"
@@ -37,7 +38,7 @@ func TestTempFilesRemovedAfterSuccess(t *testing.T) {
 	os.Setenv("TEMP_UPLOAD_DIR", tmpd)
 
 	store := storage.New("./data")
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	q := sqlc.New(dbConn)
 	album, err := q.CreateAlbum(context.Background(), sqlc.CreateAlbumParams{Title: "test", Description: sql.NullString{String: "", Valid: false}})
@@ -90,7 +91,7 @@ func TestTempFilesRemovedAfterFailure(t *testing.T) {
 	os.Setenv("TEMP_UPLOAD_DIR", tmpd)
 
 	store := storage.New("./data")
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	q := sqlc.New(dbConn)
 	album, err := q.CreateAlbum(context.Background(), sqlc.CreateAlbumParams{Title: "test", Description: sql.NullString{String: "", Valid: false}})

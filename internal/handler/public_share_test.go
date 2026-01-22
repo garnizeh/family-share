@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+"familyshare/internal/config"
 	"context"
 	"database/sql"
 	"net/http"
@@ -24,7 +25,7 @@ func setupTestHandlerForShare(t *testing.T) (*handler.Handler, *sqlc.Queries, fu
 	}
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 	q := sqlc.New(dbConn)
 
 	cleanup := func() {

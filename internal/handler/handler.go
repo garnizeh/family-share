@@ -11,6 +11,7 @@ import (
 
 	"strings"
 
+	"familyshare/internal/config"
 	"familyshare/internal/db/sqlc"
 	"familyshare/internal/storage"
 )
@@ -22,9 +23,10 @@ type Handler struct {
 	templates *template.Template
 	embedFS   embed.FS
 	tmplMu    sync.RWMutex
+	config    *config.Config
 }
 
-func New(database *sql.DB, store *storage.Storage, embedFS embed.FS) *Handler {
+func New(database *sql.DB, store *storage.Storage, embedFS embed.FS, cfg *config.Config) *Handler {
 	// Parse templates from embedded filesystem. Try several common patterns so
 	// New works whether the embed.FS contains files under "web/templates/..."
 	// (cmd embed) or under "templates/..." (web package embed).
@@ -75,6 +77,7 @@ func New(database *sql.DB, store *storage.Storage, embedFS embed.FS) *Handler {
 		storage:   store,
 		templates: tmpl,
 		embedFS:   embedFS,
+		config:    cfg,
 	}
 }
 

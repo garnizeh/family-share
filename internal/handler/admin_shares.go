@@ -19,8 +19,11 @@ func (h *Handler) ListShareLinks(w http.ResponseWriter, r *http.Request) {
 
 	q := sqlc.New(h.db)
 
+	// Check if user wants to see revoked shares
+	showRevoked := r.URL.Query().Get("show_revoked") == "true"
+
 	// Get all share links with details
-	shares, err := q.ListShareLinksWithDetails(r.Context(), sqlc.ListShareLinksWithDetailsParams{
+	allShares, err := q.ListShareLinksWithDetails(r.Context(), sqlc.ListShareLinksWithDetailsParams{
 		Limit:  100,
 		Offset: 0,
 	})
@@ -30,20 +33,34 @@ func (h *Handler) ListShareLinks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Filter out revoked shares unless explicitly requested
+	var shares []sqlc.ListShareLinksWithDetailsRow
+	if showRevoked {
+		shares = allShares
+	} else {
+		for _, share := range allShares {
+			if !share.RevokedAt.Valid {
+				shares = append(shares, share)
+			}
+		}
+	}
+
 	// Get albums and photos for the form dropdown
 	albums, _ := q.ListAlbums(r.Context(), sqlc.ListAlbumsParams{Limit: 100, Offset: 0})
 	photos, _ := q.ListAllPhotosWithAlbum(r.Context(), sqlc.ListAllPhotosWithAlbumParams{Limit: 100, Offset: 0})
 
 	data := struct {
-		Shares  []sqlc.ListShareLinksWithDetailsRow
-		Albums  []sqlc.Album
-		Photos  []sqlc.ListAllPhotosWithAlbumRow
-		BaseURL string
+		Shares      []sqlc.ListShareLinksWithDetailsRow
+		Albums      []sqlc.Album
+		Photos      []sqlc.ListAllPhotosWithAlbumRow
+		BaseURL     string
+		ShowRevoked bool
 	}{
-		Shares:  shares,
-		Albums:  albums,
-		Photos:  photos,
-		BaseURL: getBaseURL(r),
+		Shares:      shares,
+		Albums:      albums,
+		Photos:      photos,
+		BaseURL:     getBaseURL(r),
+		ShowRevoked: showRevoked,
 	}
 
 	if err := h.RenderTemplate(w, "shares_list.html", data); err != nil {
@@ -98,7 +115,8 @@ func (h *Handler) CreateShareLink(w http.ResponseWriter, r *http.Request) {
 	// Parse expires_at (optional)
 	var expiresAt sql.NullTime
 	if expiresAtStr != "" {
-		t, err := time.Parse("2006-01-02T15:04", expiresAtStr)
+		// Parse in UTC timezone
+		t, err := time.ParseInLocation("2006-01-02T15:04", expiresAtStr, time.UTC)
 		if err != nil {
 			http.Error(w, "invalid expires_at format", http.StatusBadRequest)
 			return

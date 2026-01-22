@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -29,13 +30,28 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 	// Public routes
 	r.Get("/", h.HomePage)
 
-	// Share link routes
+	// Share link routes - apply rate limiting to prevent brute-force token guessing
 	r.Route("/s", func(r chi.Router) {
+		shareLimiter := middleware.NewRateLimiter(middleware.RateLimitConfig{
+			RequestsPerMinute: h.config.RateLimitShare,
+			LockoutDuration:   5 * time.Minute,
+			MaxViolations:     10,
+			TemplateRenderer:  h,
+		})
+		r.Use(shareLimiter.Middleware())
 		r.Get("/{token}", h.ViewShareLink)
 	})
 
-	// Admin routes
+	// Admin routes - apply stricter rate limiting
 	r.Route("/admin", func(r chi.Router) {
+		// Apply rate limiting before auth to prevent brute-force login attempts
+		adminLimiter := middleware.NewRateLimiter(middleware.RateLimitConfig{
+			RequestsPerMinute: h.config.RateLimitAdmin,
+			LockoutDuration:   5 * time.Minute,
+			MaxViolations:     10,
+			TemplateRenderer:  h,
+		})
+		r.Use(adminLimiter.Middleware())
 		// Apply admin auth middleware (stub)
 		r.Use(middleware.AdminOnly)
 		// Admin pages

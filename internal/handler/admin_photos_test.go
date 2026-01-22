@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+"familyshare/internal/config"
 	"context"
 	"database/sql"
 	"net/http"
@@ -29,7 +30,7 @@ func TestDeletePhoto_RemovesFileAndDBRecord(t *testing.T) {
 	// Create temp directory for test photos
 	tempDir := t.TempDir()
 	store := storage.New(tempDir)
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 	q := sqlc.New(dbConn)
 
 	// Create album
@@ -100,7 +101,7 @@ func TestDeletePhoto_NotFound(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	// Try to delete non-existent photo
 	req := httptest.NewRequest("DELETE", "/admin/photos/99999", nil)
@@ -124,7 +125,7 @@ func TestDeletePhoto_InvalidID(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	// Try to delete with invalid ID
 	req := httptest.NewRequest("DELETE", "/admin/photos/invalid", nil)
@@ -149,7 +150,7 @@ func TestDeletePhoto_FileNotExist_SucceedsDBDeletion(t *testing.T) {
 
 	tempDir := t.TempDir()
 	store := storage.New(tempDir)
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 	q := sqlc.New(dbConn)
 
 	// Create album
@@ -201,7 +202,7 @@ func TestSetCoverPhoto_UpdatesAlbum(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 	q := sqlc.New(dbConn)
 
 	// Create album
@@ -262,7 +263,7 @@ func TestSetCoverPhoto_PhotoNotFound(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	// Try to set non-existent photo as cover
 	req := httptest.NewRequest("POST", "/admin/photos/99999/set-cover", nil)
@@ -286,7 +287,7 @@ func TestSetCoverPhoto_InvalidID(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New(t.TempDir())
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
 	// Try to set cover with invalid ID
 	req := httptest.NewRequest("POST", "/admin/photos/invalid/set-cover", nil)
@@ -311,7 +312,7 @@ func TestDeletePhoto_ThatIsAlbumCover_ClearsAlbumCover(t *testing.T) {
 
 	tempDir := t.TempDir()
 	store := storage.New(tempDir)
-	h := handler.New(dbConn, store, web.EmbedFS)
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 	q := sqlc.New(dbConn)
 
 	// Create album
