@@ -6,7 +6,7 @@
 #   make clean-local-branches       # delete local branches merged into origin/main
 #   make clean-local-branches-force # force-delete local branches merged into origin/main
 
-.PHONY: help clean-local-branches clean-local-branches-dry clean-local-branches-force build run-local
+.PHONY: help clean-local-branches clean-local-branches-dry clean-local-branches-force build run-local hash-password
 
 DEFAULT_BRANCH ?= main
 REMOTE ?= origin
@@ -19,6 +19,7 @@ help:
 	@echo "  clean-local-branches-force - force-delete local branches merged into $(REMOTE)/$(DEFAULT_BRANCH) (\-D)"
 	@echo "  build                      - compile binary to bin/familyshare"
 	@echo "  run-local                  - build and run locally (PORT, TEMP_UPLOAD_DIR env vars supported)"
+	@echo "  hash-password              - generate admin password hash (usage: make hash-password PASSWORD=yourpass)"
 
 # Build and run helpers for local testing
 # Usage:
@@ -39,6 +40,16 @@ run-local: build
 	@echo "Preparing local temp upload dir: $(TEMP_UPLOAD_DIR)"
 	@mkdir -p $(TEMP_UPLOAD_DIR)
 	@PORT=$(PORT) TEMP_UPLOAD_DIR=$(TEMP_UPLOAD_DIR) $(BINARY)
+
+# Generate admin password hash
+# Usage: make hash-password PASSWORD=YourSecurePassword123
+hash-password:
+	@if [ -z "$(PASSWORD)" ]; then \
+		echo "Error: PASSWORD variable required"; \
+		echo "Usage: make hash-password PASSWORD=YourSecurePassword123"; \
+		exit 1; \
+	fi
+	@go run scripts/hash_password.go "$(PASSWORD)"
 
 # Dry run: list branches merged into remote default branch, exclude protected names
 clean-local-branches-dry:
