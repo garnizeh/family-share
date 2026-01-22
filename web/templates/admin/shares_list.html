@@ -1,0 +1,207 @@
+{{define "shares_list.html"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Share Links - FamilyShare Admin</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body>
+    <a href="#main-content" class="skip-to-main">Skip to main content</a>
+
+    {{template "admin_nav.html" .}}
+
+    <main id="main-content" class="admin-content"
+        x-data="{ modalOpen: false, confirmRevokeOpen: false, revokeShareId: null }">
+
+        <nav class="breadcrumb">
+            <a href="/admin" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">›</span>
+            <span class="breadcrumb-item breadcrumb-current">Share Links</span>
+        </nav>
+
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="page-title">Share Links</h1>
+            <button @click="modalOpen = true" class="btn btn-primary">Create Share Link</button>
+        </div>
+
+        <section>
+            {{if .Shares}}
+            <div style="display: grid; gap: var(--space-4);">
+                {{range .Shares}}
+                <div class="card" id="share-{{.ID}}"
+                    style="{{if .RevokedAt.Valid}}opacity: 0.6; border-left: 3px solid var(--color-gray-400);{{else}}border-left: 3px solid #10b981;{{end}}">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: start; gap: var(--space-4); flex-wrap: wrap;">
+                        <!-- Left: Main Info -->
+                        <div style="flex: 1; min-width: 300px;">
+                            <div
+                                style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3);">
+                                <span style="font-size: 1.5rem;">{{if eq .TargetType "album"}}📁{{else}}📷{{end}}</span>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 1.125rem; font-weight: 600;">
+                                        {{if eq .TargetType "album"}}
+                                        <a href="/admin/albums/{{.TargetID}}"
+                                            style="color: var(--color-primary); text-decoration: none;">
+                                            {{if .TargetTitle}}{{.TargetTitle}}{{else}}Album #{{.TargetID}}{{end}}
+                                        </a>
+                                        {{else}}
+                                        <a href="/admin/albums/{{.PhotoAlbumID}}#photo-{{.TargetID}}"
+                                            style="color: var(--color-primary); text-decoration: none;">
+                                            Photo #{{.TargetID}}{{if .TargetTitle}} from {{.TargetTitle}}{{end}}
+                                        </a>
+                                        {{end}}
+                                    </h3>
+                                    <p
+                                        style="margin: 0.25rem 0 0 0; font-size: 0.875rem; color: var(--color-gray-600);">
+                                        Sharing {{.TargetType}}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Share URL -->
+                            <div
+                                style="background: var(--color-gray-50, #f9fafb); padding: var(--space-3); border-radius: var(--radius-sm, 4px); margin-bottom: var(--space-3);">
+                                <label
+                                    style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--color-gray-600); margin-bottom: 0.5rem; text-transform: uppercase;">Share
+                                    URL</label>
+                                <div style="display: flex; gap: var(--space-2); align-items: center;">
+                                    <input type="text" readonly value="{{$.BaseURL}}/s/{{.Token}}"
+                                        onclick="this.select()"
+                                        style="flex: 1; font-family: monospace; font-size: 0.875rem; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm, 4px); background: white;">
+                                    <button onclick="copyToClipboard('{{$.BaseURL}}/s/{{.Token}}')"
+                                        class="btn btn-sm btn-secondary" title="Copy to clipboard">
+                                        📋 Copy
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Stats -->
+                            <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; font-size: 0.875rem;">
+                                <div>
+                                    <span style="color: var(--color-gray-600);">Max Views:</span>
+                                    <strong>{{if .MaxViews.Valid}}{{.MaxViews.Int64}}{{else}}∞{{end}}</strong>
+                                </div>
+                                <div>
+                                    <span style="color: var(--color-gray-600);">Expires:</span>
+                                    <strong>
+                                        {{if .ExpiresAt.Valid}}
+                                        {{.ExpiresAt.Time.Format "Jan 02, 2006"}}
+                                        {{else}}
+                                        Never
+                                        {{end}}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span style="color: var(--color-gray-600);">Created:</span>
+                                    <strong>
+                                        {{if .CreatedAt.Valid}}
+                                        {{.CreatedAt.Time.Format "Jan 02, 2006"}}
+                                        {{else}}
+                                        -
+                                        {{end}}
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Status & Actions -->
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-3);">
+                            {{if .RevokedAt.Valid}}
+                            <span class="badge badge-error" style="font-size: 0.875rem; padding: 0.375rem 0.75rem;">
+                                🚫 Revoked
+                            </span>
+                            <p style="margin: 0; font-size: 0.75rem; color: var(--color-gray-500);">
+                                {{.RevokedAt.Time.Format "Jan 02, 2006"}}
+                            </p>
+                            {{else}}
+                            <span class="badge badge-success" style="font-size: 0.875rem; padding: 0.375rem 0.75rem;">
+                                ✓ Active
+                            </span>
+                            <button @click="revokeShareId = {{.ID}}; confirmRevokeOpen = true"
+                                class="btn btn-danger btn-sm">
+                                Revoke Link
+                            </button>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            {{else}}
+            <div class="empty-state">
+                <div class="empty-state-icon">🔗</div>
+                <h3 class="empty-state-title">No Share Links Yet</h3>
+                <p class="empty-state-description">
+                    Create your first share link to share albums or photos with others.
+                </p>
+                <button @click="modalOpen = true" class="btn btn-primary">Create Share Link</button>
+            </div>
+            {{end}}
+        </section>
+
+        <!-- Create Share Link Modal -->
+        <div class="modal" x-show="modalOpen" @click.self="modalOpen = false" style="display: none;" x-cloak>
+            <div class="modal-backdrop" @click="modalOpen = false"></div>
+            <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                    <h2 class="modal-title">Create Share Link</h2>
+                    <button @click="modalOpen = false" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    {{template "share_form.html" .}}
+                </div>
+            </div>
+        </div>
+
+        <!-- Revoke Confirmation Modal -->
+        <div class="modal" x-show="confirmRevokeOpen" @click.self="confirmRevokeOpen = false" style="display: none;"
+            x-cloak>
+            <div class="modal-backdrop" @click="confirmRevokeOpen = false"></div>
+            <div class="modal-content" @click.stop style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">Revoke Share Link</h2>
+                    <button @click="confirmRevokeOpen = false" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: var(--space-4); color: var(--color-gray-700);">
+                        Are you sure you want to revoke this share link?
+                    </p>
+                    <p style="color: var(--color-error); font-size: var(--font-size-sm);">
+                        ⚠️ This will immediately prevent access. This action cannot be undone.
+                    </p>
+                </div>
+                <div
+                    style="padding: var(--space-6); border-top: var(--border-width) solid var(--color-gray-200); display: flex; gap: var(--space-3); justify-content: flex-end;">
+                    <button @click="confirmRevokeOpen = false" class="btn btn-secondary">Cancel</button>
+                    <button @click="fetch('/admin/shares/' + revokeShareId, { method: 'DELETE' }).then(() => { 
+                            const row = document.querySelector('#share-' + revokeShareId);
+                            if (row) row.remove();
+                            confirmRevokeOpen = false; 
+                        })" class="btn btn-danger">
+                        Revoke Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Optional: show a toast notification
+                alert('Token copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+    </script>
+</body>
+
+</html>
+{{end}}

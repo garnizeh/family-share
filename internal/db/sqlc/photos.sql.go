@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 )
 
 const countPhotos = `-- name: CountPhotos :one
@@ -96,6 +97,66 @@ func (q *Queries) GetTotalStorageBytes(ctx context.Context) (interface{}, error)
 	var coalesce interface{}
 	err := row.Scan(&coalesce)
 	return coalesce, err
+}
+
+const listAllPhotosWithAlbum = `-- name: ListAllPhotosWithAlbum :many
+SELECT 
+    p.id, p.album_id, p.filename, p.width, p.height, p.size_bytes, p.format, p.created_at,
+    a.title as album_title
+FROM photos p
+JOIN albums a ON p.album_id = a.id
+ORDER BY p.created_at DESC
+LIMIT ? OFFSET ?
+`
+
+type ListAllPhotosWithAlbumParams struct {
+	Limit  int64 `json:"limit"`
+	Offset int64 `json:"offset"`
+}
+
+type ListAllPhotosWithAlbumRow struct {
+	ID         int64        `json:"id"`
+	AlbumID    int64        `json:"album_id"`
+	Filename   string       `json:"filename"`
+	Width      int64        `json:"width"`
+	Height     int64        `json:"height"`
+	SizeBytes  int64        `json:"size_bytes"`
+	Format     string       `json:"format"`
+	CreatedAt  sql.NullTime `json:"created_at"`
+	AlbumTitle string       `json:"album_title"`
+}
+
+func (q *Queries) ListAllPhotosWithAlbum(ctx context.Context, arg ListAllPhotosWithAlbumParams) ([]ListAllPhotosWithAlbumRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllPhotosWithAlbum, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAllPhotosWithAlbumRow{}
+	for rows.Next() {
+		var i ListAllPhotosWithAlbumRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AlbumID,
+			&i.Filename,
+			&i.Width,
+			&i.Height,
+			&i.SizeBytes,
+			&i.Format,
+			&i.CreatedAt,
+			&i.AlbumTitle,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listPhotosByAlbum = `-- name: ListPhotosByAlbum :many

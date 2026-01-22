@@ -9,6 +9,15 @@ SELECT * FROM photos WHERE id = ?;
 -- name: ListPhotosByAlbum :many
 SELECT * FROM photos WHERE album_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?;
 
+-- name: ListAllPhotosWithAlbum :many
+SELECT 
+    p.*,
+    a.title as album_title
+FROM photos p
+JOIN albums a ON p.album_id = a.id
+ORDER BY p.created_at DESC
+LIMIT ? OFFSET ?;
+
 -- name: DeletePhoto :exec
 DELETE FROM photos WHERE id = ?;
 

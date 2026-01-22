@@ -13,6 +13,7 @@ type Querier interface {
 	ClearAlbumCoverIfPhoto(ctx context.Context, coverPhotoID sql.NullInt64) error
 	CountAlbums(ctx context.Context) (int64, error)
 	CountPhotos(ctx context.Context) (int64, error)
+	CountShareLinks(ctx context.Context) (int64, error)
 	CreateActivityEvent(ctx context.Context, arg CreateActivityEventParams) error
 	CreateAlbum(ctx context.Context, arg CreateAlbumParams) (Album, error)
 	CreatePhoto(ctx context.Context, arg CreatePhotoParams) (Photo, error)
@@ -22,13 +23,19 @@ type Querier interface {
 	GetAlbum(ctx context.Context, id int64) (Album, error)
 	GetAlbumWithPhotoCount(ctx context.Context, id int64) (GetAlbumWithPhotoCountRow, error)
 	GetPhoto(ctx context.Context, id int64) (Photo, error)
+	GetShareLink(ctx context.Context, id int64) (ShareLink, error)
 	GetShareLinkByToken(ctx context.Context, token string) (ShareLink, error)
 	GetTotalStorageBytes(ctx context.Context) (interface{}, error)
 	IncrementShareLinkView(ctx context.Context, arg IncrementShareLinkViewParams) error
+	ListActiveShareLinks(ctx context.Context, arg ListActiveShareLinksParams) ([]ShareLink, error)
 	ListAlbums(ctx context.Context, arg ListAlbumsParams) ([]Album, error)
 	ListAlbumsWithPhotoCount(ctx context.Context, arg ListAlbumsWithPhotoCountParams) ([]ListAlbumsWithPhotoCountRow, error)
+	ListAllPhotosWithAlbum(ctx context.Context, arg ListAllPhotosWithAlbumParams) ([]ListAllPhotosWithAlbumRow, error)
 	ListPhotosByAlbum(ctx context.Context, arg ListPhotosByAlbumParams) ([]Photo, error)
 	ListRecentActivity(ctx context.Context, arg ListRecentActivityParams) ([]ActivityEvent, error)
+	ListShareLinks(ctx context.Context, arg ListShareLinksParams) ([]ShareLink, error)
+	ListShareLinksWithDetails(ctx context.Context, arg ListShareLinksWithDetailsParams) ([]ListShareLinksWithDetailsRow, error)
+	RevokeShareLink(ctx context.Context, id int64) error
 	SetAlbumCover(ctx context.Context, arg SetAlbumCoverParams) error
 	UpdateAlbum(ctx context.Context, arg UpdateAlbumParams) error
 }
