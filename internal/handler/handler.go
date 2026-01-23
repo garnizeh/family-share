@@ -13,6 +13,7 @@ import (
 
 	"familyshare/internal/config"
 	"familyshare/internal/db/sqlc"
+	"familyshare/internal/metrics"
 	"familyshare/internal/storage"
 )
 
@@ -24,6 +25,7 @@ type Handler struct {
 	embedFS   embed.FS
 	tmplMu    sync.RWMutex
 	config    *config.Config
+	metrics   *metrics.Logger
 }
 
 func New(database *sql.DB, store *storage.Storage, embedFS embed.FS, cfg *config.Config) *Handler {
@@ -78,6 +80,7 @@ func New(database *sql.DB, store *storage.Storage, embedFS embed.FS, cfg *config
 		templates: tmpl,
 		embedFS:   embedFS,
 		config:    cfg,
+		metrics:   metrics.New(database),
 	}
 }
 

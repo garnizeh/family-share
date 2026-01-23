@@ -46,6 +46,65 @@
             </div>
         </div>
 
+        {{if .Stats}}
+        <div class="mt-8">
+            <h2 class="text-2xl font-semibold mb-4">Activity Metrics</h2>
+
+            <div class="dashboard-grid">
+                <!-- Uploads -->
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Uploads (7 Days)</h3>
+                        <p class="stat-number">{{.Stats.Uploads7Days}}</p>
+                        <p class="text-muted mb-0">Recent uploads</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Uploads (30 Days)</h3>
+                        <p class="stat-number">{{.Stats.Uploads30Days}}</p>
+                        <p class="text-muted mb-0">Monthly uploads</p>
+                    </div>
+                </div>
+
+                <!-- Album Views -->
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Album Views (7 Days)</h3>
+                        <p class="stat-number">{{.Stats.AlbumViews7Days}}</p>
+                        <p class="text-muted mb-0">Recent views</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Album Views (30 Days)</h3>
+                        <p class="stat-number">{{.Stats.AlbumViews30Days}}</p>
+                        <p class="text-muted mb-0">Monthly views</p>
+                    </div>
+                </div>
+
+                <!-- Share Link Hits -->
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Share Hits (7 Days)</h3>
+                        <p class="stat-number">{{.Stats.ShareViews7Days}}</p>
+                        <p class="text-muted mb-0">Recent share views</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Share Hits (30 Days)</h3>
+                        <p class="stat-number">{{.Stats.ShareViews30Days}}</p>
+                        <p class="text-muted mb-0">Monthly share views</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{end}}
+
         {{if not .HasAlbums}}
         <div class="empty-state mt-8">
             <div class="empty-state-icon">🎉</div>

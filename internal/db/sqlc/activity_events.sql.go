@@ -10,6 +10,89 @@ import (
 	"database/sql"
 )
 
+const countActivityByTypeSince = `-- name: CountActivityByTypeSince :many
+SELECT event_type, COUNT(*) as count
+FROM activity_events
+WHERE created_at >= ?
+GROUP BY event_type
+`
+
+type CountActivityByTypeSinceRow struct {
+	EventType string `json:"event_type"`
+	Count     int64  `json:"count"`
+}
+
+func (q *Queries) CountActivityByTypeSince(ctx context.Context, createdAt sql.NullTime) ([]CountActivityByTypeSinceRow, error) {
+	rows, err := q.db.QueryContext(ctx, countActivityByTypeSince, createdAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CountActivityByTypeSinceRow{}
+	for rows.Next() {
+		var i CountActivityByTypeSinceRow
+		if err := rows.Scan(&i.EventType, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const countAlbumViewsSince = `-- name: CountAlbumViewsSince :one
+SELECT COUNT(*) FROM activity_events
+WHERE event_type = 'album_view' AND created_at >= ?
+`
+
+func (q *Queries) CountAlbumViewsSince(ctx context.Context, createdAt sql.NullTime) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countAlbumViewsSince, createdAt)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countPhotoViewsSince = `-- name: CountPhotoViewsSince :one
+SELECT COUNT(*) FROM activity_events
+WHERE event_type = 'photo_view' AND created_at >= ?
+`
+
+func (q *Queries) CountPhotoViewsSince(ctx context.Context, createdAt sql.NullTime) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countPhotoViewsSince, createdAt)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countShareViewsSince = `-- name: CountShareViewsSince :one
+SELECT COUNT(*) FROM activity_events
+WHERE event_type = 'share_view' AND created_at >= ?
+`
+
+func (q *Queries) CountShareViewsSince(ctx context.Context, createdAt sql.NullTime) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countShareViewsSince, createdAt)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countUploadsSince = `-- name: CountUploadsSince :one
+SELECT COUNT(*) FROM activity_events
+WHERE event_type = 'upload' AND created_at >= ?
+`
+
+func (q *Queries) CountUploadsSince(ctx context.Context, createdAt sql.NullTime) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUploadsSince, createdAt)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createActivityEvent = `-- name: CreateActivityEvent :exec
 INSERT INTO activity_events (event_type, album_id, photo_id, share_link_id) VALUES (?, ?, ?, ?)
 `
@@ -28,6 +111,15 @@ func (q *Queries) CreateActivityEvent(ctx context.Context, arg CreateActivityEve
 		arg.PhotoID,
 		arg.ShareLinkID,
 	)
+	return err
+}
+
+const deleteOldActivityEvents = `-- name: DeleteOldActivityEvents :exec
+DELETE FROM activity_events WHERE created_at < ?
+`
+
+func (q *Queries) DeleteOldActivityEvents(ctx context.Context, createdAt sql.NullTime) error {
+	_, err := q.db.ExecContext(ctx, deleteOldActivityEvents, createdAt)
 	return err
 }
 
