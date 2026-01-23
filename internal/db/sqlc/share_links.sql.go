@@ -68,6 +68,42 @@ func (q *Queries) CreateShareLink(ctx context.Context, arg CreateShareLinkParams
 	return i, err
 }
 
+const deleteExpiredShareLinks = `-- name: DeleteExpiredShareLinks :many
+DELETE FROM share_links 
+WHERE expires_at IS NOT NULL AND expires_at < CURRENT_TIMESTAMP
+   OR revoked_at IS NOT NULL
+RETURNING id, target_type, target_id
+`
+
+type DeleteExpiredShareLinksRow struct {
+	ID         int64  `json:"id"`
+	TargetType string `json:"target_type"`
+	TargetID   int64  `json:"target_id"`
+}
+
+func (q *Queries) DeleteExpiredShareLinks(ctx context.Context) ([]DeleteExpiredShareLinksRow, error) {
+	rows, err := q.db.QueryContext(ctx, deleteExpiredShareLinks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DeleteExpiredShareLinksRow{}
+	for rows.Next() {
+		var i DeleteExpiredShareLinksRow
+		if err := rows.Scan(&i.ID, &i.TargetType, &i.TargetID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getShareLink = `-- name: GetShareLink :one
 SELECT id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at FROM share_links WHERE id = ?
 `

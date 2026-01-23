@@ -15,6 +15,7 @@ import (
 	"familyshare/internal/config"
 	"familyshare/internal/db"
 	"familyshare/internal/handler"
+	"familyshare/internal/janitor"
 	"familyshare/internal/storage"
 	"familyshare/web"
 )
@@ -49,6 +50,17 @@ func main() {
 	// Register routes
 	h.RegisterRoutes(r)
 
+	// Initialize and start janitor for cleanup tasks
+	jan := janitor.New(janitor.Config{
+		DB:          database,
+		StoragePath: cfg.DataDir,
+		Interval:    cfg.JanitorInterval,
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	jan.Start(ctx)
+	defer jan.Stop()
+
 	// Create server
 	srv := &http.Server{
 		Addr:         cfg.ServerAddr,
@@ -70,28 +82,13 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	// Start background janitor to clean orphaned temp uploads every 15 minutes.
-	go func() {
-		ticker := time.NewTicker(15 * time.Minute)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				// best-effort cleanup
-				_ = storage.CleanOrphanedTempFiles(15 * time.Minute)
-			case <-quit:
-				return
-			}
-		}
-	}()
-
 	<-quit
 
 	log.Println("Shutting down server...")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Fatalf("Server forced to shutdown: %v", err)
 	}
 

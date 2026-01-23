@@ -34,6 +34,9 @@ WHERE id = ?;
 -- name: DeleteAlbum :exec
 DELETE FROM albums WHERE id = ?;
 
+-- name: GetPhotosForAlbum :many
+SELECT * FROM photos WHERE album_id = ?;
+
 -- name: CountAlbums :one
 SELECT COUNT(*) FROM albums;
 

@@ -59,6 +59,47 @@ func (q *Queries) CreatePhoto(ctx context.Context, arg CreatePhotoParams) (Photo
 	return i, err
 }
 
+const deleteOrphanedPhotos = `-- name: DeleteOrphanedPhotos :many
+DELETE FROM photos 
+WHERE album_id NOT IN (SELECT id FROM albums)
+RETURNING id, album_id, filename, format
+`
+
+type DeleteOrphanedPhotosRow struct {
+	ID       int64  `json:"id"`
+	AlbumID  int64  `json:"album_id"`
+	Filename string `json:"filename"`
+	Format   string `json:"format"`
+}
+
+func (q *Queries) DeleteOrphanedPhotos(ctx context.Context) ([]DeleteOrphanedPhotosRow, error) {
+	rows, err := q.db.QueryContext(ctx, deleteOrphanedPhotos)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DeleteOrphanedPhotosRow{}
+	for rows.Next() {
+		var i DeleteOrphanedPhotosRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AlbumID,
+			&i.Filename,
+			&i.Format,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deletePhoto = `-- name: DeletePhoto :exec
 DELETE FROM photos WHERE id = ?
 `

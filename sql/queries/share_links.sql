@@ -52,3 +52,9 @@ INSERT OR IGNORE INTO share_link_views (share_link_id, viewer_hash) VALUES (?, ?
 
 -- name: CountUniqueShareLinkViews :one
 SELECT COUNT(DISTINCT viewer_hash) FROM share_link_views WHERE share_link_id = ?;
+
+-- name: DeleteExpiredShareLinks :many
+DELETE FROM share_links 
+WHERE expires_at IS NOT NULL AND expires_at < CURRENT_TIMESTAMP
+   OR revoked_at IS NOT NULL
+RETURNING id, target_type, target_id;
