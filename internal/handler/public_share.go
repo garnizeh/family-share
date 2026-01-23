@@ -73,6 +73,13 @@ func (h *Handler) ViewShareLink(w http.ResponseWriter, r *http.Request) {
 		// Continue anyway, tracking is best-effort
 	}
 
+	// Log share view event (fire and forget)
+	go func() {
+		if err := h.metrics.LogShareView(r.Context(), link.ID); err != nil {
+			log.Printf("failed to log share view event: %v", err)
+		}
+	}()
+
 	// 7. Set viewer hash cookie for future visits
 	security.SetViewerHashCookie(w, token, viewerHash, &link.ExpiresAt.Time)
 

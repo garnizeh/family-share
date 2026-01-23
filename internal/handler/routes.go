@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"familyshare/internal/db/sqlc"
+	"familyshare/internal/metrics"
 	"familyshare/internal/middleware"
 )
 
@@ -120,16 +121,26 @@ func (h *Handler) AdminDashboard(w http.ResponseWriter, r *http.Request) {
 		storageMB = float64(bytesVal) / (1024 * 1024)
 	}
 
+	// Get activity metrics
+	stats, err := h.metrics.GetStats(r.Context())
+	if err != nil {
+		log.Printf("failed to get metrics: %v", err)
+		// Continue with empty stats rather than failing the whole page
+		stats = &metrics.Stats{}
+	}
+
 	data := struct {
 		AlbumCount int64
 		PhotoCount int64
 		StorageMB  float64
 		HasAlbums  bool
+		Stats      *metrics.Stats
 	}{
 		AlbumCount: albumCount,
 		PhotoCount: photoCount,
 		StorageMB:  storageMB,
 		HasAlbums:  albumCount > 0,
+		Stats:      stats,
 	}
 
 	if err := h.RenderTemplate(w, "admin_dashboard.html", data); err != nil {

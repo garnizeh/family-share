@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -75,5 +76,24 @@ func SaveProcessedImage(
 		return 0, "", fmt.Errorf("commit tx: %w", err)
 	}
 
+	// Log upload event (fire and forget, don't fail upload if logging fails)
+	go func() {
+		logCtx := context.Background()
+		if err := logUploadEvent(logCtx, db, albumID, p.ID); err != nil {
+			log.Printf("failed to log upload event: %v", err)
+		}
+	}()
+
 	return p.ID, path, nil
+}
+
+// logUploadEvent logs an upload activity event
+func logUploadEvent(ctx context.Context, db *sql.DB, albumID, photoID int64) error {
+	q := sqlc.New(db)
+	return q.CreateActivityEvent(ctx, sqlc.CreateActivityEventParams{
+		EventType:   "upload",
+		AlbumID:     sql.NullInt64{Int64: albumID, Valid: true},
+		PhotoID:     sql.NullInt64{Int64: photoID, Valid: true},
+		ShareLinkID: sql.NullInt64{Valid: false},
+	})
 }

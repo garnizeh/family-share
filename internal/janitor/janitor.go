@@ -88,6 +88,7 @@ func (j *Janitor) runCleanup(ctx context.Context) {
 	j.deleteExpiredSessions(ctx)
 	j.deleteExpiredShareLinks(ctx)
 	j.deleteOrphanedPhotos(ctx)
+	j.deleteOldActivityEvents(ctx)
 	j.cleanupTempFiles()
 
 	duration := time.Since(start)
@@ -191,4 +192,16 @@ func (j *Janitor) cleanupTempFiles() {
 	if err := storage.CleanOrphanedTempFiles(15 * time.Minute); err != nil {
 		log.Printf("Janitor: failed to cleanup temp files: %v", err)
 	}
+}
+
+// deleteOldActivityEvents removes activity events older than 90 days
+func (j *Janitor) deleteOldActivityEvents(ctx context.Context) {
+	ninetyDaysAgo := time.Now().UTC().Add(-90 * 24 * time.Hour)
+	
+	err := j.queries.DeleteOldActivityEvents(ctx, sql.NullTime{Time: ninetyDaysAgo, Valid: true})
+	if err != nil {
+		log.Printf("Janitor: failed to delete old activity events: %v", err)
+		return
+	}
+	log.Println("Janitor: deleted old activity events (90+ days)")
 }
