@@ -21,8 +21,7 @@
         </div>
     </nav>
 
-    <main id="main-content" style="max-width: 1200px; margin: 0 auto; padding: var(--space-6);"
-        x-data="{ lightboxOpen: false, lightboxSrc: '', lightboxFilename: '' }">
+    <main id="main-content" style="max-width: 1200px; margin: 0 auto; padding: var(--space-6);" x-data="photoGallery()">
 
         <header style="margin-bottom: var(--space-8); text-align: center;">
             <h1 style="font-size: var(--font-size-3xl); color: var(--color-gray-900); margin-bottom: var(--space-2);">
@@ -34,7 +33,7 @@
             </p>
             {{end}}
             <p style="font-size: var(--font-size-sm); color: var(--color-gray-500); margin-top: var(--space-3);">
-                📷 {{len .Photos}} {{if eq (len .Photos) 1}}photo{{else}}photos{{end}}
+                📷 <span x-text="photos.length"></span> <span x-text="photos.length === 1 ? 'photo' : 'photos'"></span>
             </p>
         </header>
 
@@ -42,13 +41,13 @@
         <section>
             <!-- Photo Grid Container -->
             <div id="photo-grid" class="grid-photos">
-                {{range .Photos}}
-                <div class="card card-photo">
-                    <img src="/data/photos/{{.ID}}.webp" alt="{{.Filename}}" class="card-photo-preview" loading="lazy"
-                        @click="lightboxSrc = '/data/photos/{{.ID}}.webp'; lightboxFilename = '{{.Filename}}'; lightboxOpen = true"
-                        style="cursor: pointer;">
+                {{range $index, $photo := .Photos}}
+                <div class="card card-photo" data-photo-id="{{$photo.ID}}"
+                    data-photo-url="/data/photos/{{$photo.ID}}.webp" data-photo-name="{{$photo.Filename}}">
+                    <img src="/data/photos/{{$photo.ID}}.webp" alt="{{$photo.Filename}}" class="card-photo-preview"
+                        loading="lazy" @click="openLightbox({{$index}})" style="cursor: pointer;">
                     <div class="card-photo-info">
-                        <p class="text-xs text-muted mb-0">{{.Filename}}</p>
+                        <p class="text-xs text-muted mb-0">{{$photo.Filename}}</p>
                     </div>
                 </div>
                 {{end}}
@@ -78,22 +77,45 @@
         </div>
         {{end}}
 
-        <!-- Photo Lightbox Modal -->
-        <div class="modal" x-show="lightboxOpen" @click.self="lightboxOpen = false"
-            @keydown.escape.window="lightboxOpen = false" style="display: none;" x-cloak>
-            <div class="modal-backdrop" @click="lightboxOpen = false" style="background: rgba(0, 0, 0, 0.95);"></div>
+        <!-- Photo Lightbox Modal with Carousel -->
+        <div class="modal" x-show="lightboxOpen" @click.self="closeLightbox()" @keydown.escape.window="closeLightbox()"
+            @keydown.arrow-left.window="prevPhoto()" @keydown.arrow-right.window="nextPhoto()" style="display: none;"
+            x-cloak role="dialog" aria-modal="true" aria-label="Photo lightbox">
+            <div class="modal-backdrop" @click="closeLightbox()" style="background: rgba(0, 0, 0, 0.95);"></div>
             <div style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1001; padding: var(--space-4);"
                 @click.stop>
-                <button @click="lightboxOpen = false"
-                    style="position: absolute; top: var(--space-4); right: var(--space-4); background: rgba(0, 0, 0, 0.7); color: white; border: none; font-size: 2rem; width: 3rem; height: 3rem; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1002;"
-                    title="Close (Esc)">&times;</button>
+
+                <!-- Close Button -->
+                <button @click="closeLightbox()"
+                    style="position: absolute; top: var(--space-4); right: var(--space-4); background: rgba(0, 0, 0, 0.7); color: white; border: none; font-size: 2rem; width: 3rem; height: 3rem; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1002; transition: background var(--transition-fast);"
+                    onmouseover="this.style.background='rgba(0, 0, 0, 0.9)'"
+                    onmouseout="this.style.background='rgba(0, 0, 0, 0.7)'" title="Close (Esc)"
+                    aria-label="Close lightbox">&times;</button>
+
+                <!-- Previous Button -->
+                <button @click="prevPhoto()" x-show="photos.length > 1"
+                    style="position: absolute; left: var(--space-4); top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, 0.7); color: white; border: none; font-size: 3rem; width: 3.5rem; height: 3.5rem; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1002; line-height: 1; padding: 0; transition: background var(--transition-fast);"
+                    onmouseover="this.style.background='rgba(0, 0, 0, 0.9)'"
+                    onmouseout="this.style.background='rgba(0, 0, 0, 0.7)'" title="Previous (←)"
+                    aria-label="Previous photo">&lsaquo;</button>
+
+                <!-- Next Button -->
+                <button @click="nextPhoto()" x-show="photos.length > 1"
+                    style="position: absolute; right: var(--space-4); top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, 0.7); color: white; border: none; font-size: 3rem; width: 3.5rem; height: 3.5rem; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1002; line-height: 1; padding: 0; transition: background var(--transition-fast);"
+                    onmouseover="this.style.background='rgba(0, 0, 0, 0.9)'"
+                    onmouseout="this.style.background='rgba(0, 0, 0, 0.7)'" title="Next (→)"
+                    aria-label="Next photo">&rsaquo;</button>
+
                 <div style="max-width: 95vw; max-height: 95vh; display: flex; flex-direction: column; align-items: center;"
                     @click.stop>
-                    <img :src="lightboxSrc" :alt="lightboxFilename"
+                    <img :src="currentPhoto.url" :alt="currentPhoto.name"
                         style="max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-xl);">
-                    <p x-text="lightboxFilename"
-                        style="color: white; margin-top: var(--space-4); font-size: var(--font-size-sm); background: rgba(0, 0, 0, 0.7); padding: var(--space-2) var(--space-4); border-radius: var(--border-radius);">
-                    </p>
+                    <div
+                        style="color: white; margin-top: var(--space-4); font-size: var(--font-size-sm); background: rgba(0, 0, 0, 0.7); padding: var(--space-2) var(--space-4); border-radius: var(--border-radius); display: flex; align-items: center; gap: var(--space-3);">
+                        <p x-text="currentPhoto.name" style="margin: 0;"></p>
+                        <span x-show="photos.length > 1" x-text="`${currentIndex + 1} / ${photos.length}`"
+                            style="opacity: 0.7;"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -125,6 +147,61 @@
             opacity: 0.6;
         }
     </style>
+
+    <script>
+        function photoGallery() {
+            return {
+                lightboxOpen: false,
+                currentIndex: 0,
+                photos: [],
+
+                init() {
+                    // Initialize photos array from DOM
+                    this.updatePhotosFromDOM();
+
+                    // Re-index photos when HTMX loads more
+                    document.body.addEventListener('htmx:afterSwap', () => {
+                        this.updatePhotosFromDOM();
+                    });
+                },
+
+                updatePhotosFromDOM() {
+                    const photoCards = document.querySelectorAll('[data-photo-id]');
+                    this.photos = Array.from(photoCards).map((card, index) => ({
+                        id: card.dataset.photoId,
+                        url: card.dataset.photoUrl,
+                        name: card.dataset.photoName,
+                        index: index
+                    }));
+                },
+
+                get currentPhoto() {
+                    return this.photos[this.currentIndex] || { url: '', name: '', id: '' };
+                },
+
+                openLightbox(index) {
+                    this.currentIndex = index;
+                    this.lightboxOpen = true;
+                    document.body.style.overflow = 'hidden';
+                },
+
+                closeLightbox() {
+                    this.lightboxOpen = false;
+                    document.body.style.overflow = '';
+                },
+
+                nextPhoto() {
+                    if (!this.lightboxOpen || this.photos.length === 0) return;
+                    this.currentIndex = (this.currentIndex + 1) % this.photos.length;
+                },
+
+                prevPhoto() {
+                    if (!this.lightboxOpen || this.photos.length === 0) return;
+                    this.currentIndex = (this.currentIndex - 1 + this.photos.length) % this.photos.length;
+                }
+            }
+        }
+    </script>
 </body>
 
 </html>
