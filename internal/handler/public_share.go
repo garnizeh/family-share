@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"familyshare/internal/db/sqlc"
@@ -86,7 +87,7 @@ func (h *Handler) ViewShareLink(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// renderShareAlbum renders the public album view
+// renderShareAlbum renders the public album view with HTMX pagination
 func (h *Handler) renderShareAlbum(w http.ResponseWriter, r *http.Request, link sqlc.ShareLink) {
 	q := sqlc.New(h.db)
 
@@ -102,30 +103,64 @@ func (h *Handler) renderShareAlbum(w http.ResponseWriter, r *http.Request, link 
 		return
 	}
 
-	// Load photos
+	// Get pagination parameters
+	pageNum := 1
+	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			pageNum = p
+		}
+	}
+
+	const pageSize = 20
+	offset := (pageNum - 1) * pageSize
+
+	// Load photos for this page (fetch one extra to check if there are more)
 	photos, err := q.ListPhotosByAlbum(r.Context(), sqlc.ListPhotosByAlbumParams{
 		AlbumID: album.ID,
-		Limit:   1000,
-		Offset:  0,
+		Limit:   int64(pageSize + 1),
+		Offset:  int64(offset),
 	})
 	if err != nil {
 		log.Printf("error loading photos: %v", err)
 		photos = []sqlc.Photo{} // Show empty album on error
 	}
 
+	// Check if there are more pages
+	hasMore := len(photos) > pageSize
+	if hasMore {
+		photos = photos[:pageSize] // Trim the extra photo
+	}
+
+	// Check if this is an HTMX request
+	isHTMX := r.Header.Get("HX-Request") == "true"
+
 	data := struct {
-		Album  sqlc.Album
-		Photos []sqlc.Photo
-		Token  string
+		Album    sqlc.Album
+		Photos   []sqlc.Photo
+		Token    string
+		Page     int
+		NextPage int
+		HasMore  bool
 	}{
-		Album:  album,
-		Photos: photos,
-		Token:  link.Token,
+		Album:    album,
+		Photos:   photos,
+		Token:    link.Token,
+		Page:     pageNum,
+		NextPage: pageNum + 1,
+		HasMore:  hasMore,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := h.RenderTemplate(w, "share_album.html", data); err != nil {
-		log.Printf("template render error for share_album: %v", err)
+
+	var templateName string
+	if isHTMX {
+		templateName = "photo_grid_partial.html"
+	} else {
+		templateName = "share_album.html"
+	}
+
+	if err := h.RenderTemplate(w, templateName, data); err != nil {
+		log.Printf("template render error for %s: %v", templateName, err)
 		http.Error(w, "template render error", http.StatusInternalServerError)
 	}
 }
