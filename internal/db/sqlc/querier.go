@@ -22,12 +22,15 @@ type Querier interface {
 	CreateShareLink(ctx context.Context, arg CreateShareLinkParams) (ShareLink, error)
 	DeleteAlbum(ctx context.Context, id int64) error
 	DeleteExpiredSessions(ctx context.Context) error
+	DeleteExpiredShareLinks(ctx context.Context) ([]DeleteExpiredShareLinksRow, error)
+	DeleteOrphanedPhotos(ctx context.Context) ([]DeleteOrphanedPhotosRow, error)
 	DeletePhoto(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteUserSessions(ctx context.Context, userID string) error
 	GetAlbum(ctx context.Context, id int64) (Album, error)
 	GetAlbumWithPhotoCount(ctx context.Context, id int64) (GetAlbumWithPhotoCountRow, error)
 	GetPhoto(ctx context.Context, id int64) (Photo, error)
+	GetPhotosForAlbum(ctx context.Context, albumID int64) ([]Photo, error)
 	GetSession(ctx context.Context, id string) (Session, error)
 	GetShareLink(ctx context.Context, id int64) (ShareLink, error)
 	GetShareLinkByToken(ctx context.Context, token string) (ShareLink, error)

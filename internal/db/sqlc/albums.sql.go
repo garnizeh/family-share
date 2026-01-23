@@ -119,6 +119,42 @@ func (q *Queries) GetAlbumWithPhotoCount(ctx context.Context, id int64) (GetAlbu
 	return i, err
 }
 
+const getPhotosForAlbum = `-- name: GetPhotosForAlbum :many
+SELECT id, album_id, filename, width, height, size_bytes, format, created_at FROM photos WHERE album_id = ?
+`
+
+func (q *Queries) GetPhotosForAlbum(ctx context.Context, albumID int64) ([]Photo, error) {
+	rows, err := q.db.QueryContext(ctx, getPhotosForAlbum, albumID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Photo{}
+	for rows.Next() {
+		var i Photo
+		if err := rows.Scan(
+			&i.ID,
+			&i.AlbumID,
+			&i.Filename,
+			&i.Width,
+			&i.Height,
+			&i.SizeBytes,
+			&i.Format,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAlbums = `-- name: ListAlbums :many
 SELECT id, title, description, cover_photo_id, created_at, updated_at FROM albums
 ORDER BY created_at DESC

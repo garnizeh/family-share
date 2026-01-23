@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -18,6 +19,9 @@ type Config struct {
 	
 	// Admin authentication
 	AdminPasswordHash string // bcrypt hash of admin password
+	
+	// Janitor configuration
+	JanitorInterval time.Duration // interval for cleanup tasks
 }
 
 func Load() *Config {
@@ -31,6 +35,7 @@ func Load() *Config {
 		RateLimitShare:    getEnvInt("RATE_LIMIT_SHARE", 60),
 		RateLimitAdmin:    getEnvInt("RATE_LIMIT_ADMIN", 10),
 		AdminPasswordHash: getEnv("ADMIN_PASSWORD_HASH", ""),
+		JanitorInterval:   getEnvDuration("JANITOR_INTERVAL", 6*time.Hour),
 	}
 }
 
@@ -45,6 +50,15 @@ func getEnvInt(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
 		if intVal, err := strconv.Atoi(value); err == nil {
 			return intVal
+		}
+	}
+	return defaultValue
+}
+
+func getEnvDuration(key string, defaultValue time.Duration) time.Duration {
+	if value := os.Getenv(key); value != "" {
+		if duration, err := time.ParseDuration(value); err == nil {
+			return duration
 		}
 	}
 	return defaultValue
