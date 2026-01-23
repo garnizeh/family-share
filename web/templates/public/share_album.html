@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Album.Title}} - FamilyShare</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 
@@ -37,9 +38,10 @@
             </p>
         </header>
 
-        {{if .Photos}}
+        {{if or .Photos .HasMore}}
         <section>
-            <div class="grid-photos">
+            <!-- Photo Grid Container -->
+            <div id="photo-grid" class="grid-photos">
                 {{range .Photos}}
                 <div class="card card-photo">
                     <img src="/data/photos/{{.ID}}.webp" alt="{{.Filename}}" class="card-photo-preview" loading="lazy"
@@ -51,6 +53,20 @@
                 </div>
                 {{end}}
             </div>
+
+            <!-- Load More Button -->
+            {{if .HasMore}}
+            <div id="load-more-container" style="display: flex; justify-content: center; margin-top: var(--space-8);">
+                <button class="btn btn-secondary" hx-get="/s/{{.Token}}?page={{.NextPage}}" hx-target="#photo-grid"
+                    hx-swap="beforeend" hx-indicator="#loading-spinner" style="position: relative;">
+                    <span id="load-more-text">Load More Photos</span>
+                    <span id="loading-spinner" class="htmx-indicator" style="margin-left: var(--space-2);">
+                        <span
+                            style="display: inline-block; width: 1rem; height: 1rem; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite;"></span>
+                    </span>
+                </button>
+            </div>
+            {{end}}
         </section>
         {{else}}
         <div class="empty-state">
@@ -89,6 +105,26 @@
             Shared via FamilyShare 📸
         </p>
     </footer>
+
+    <style>
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .htmx-indicator {
+            display: none;
+        }
+
+        .htmx-request .htmx-indicator {
+            display: inline-block;
+        }
+
+        .htmx-request #load-more-text {
+            opacity: 0.6;
+        }
+    </style>
 </body>
 
 </html>

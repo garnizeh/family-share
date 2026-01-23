@@ -1,9 +1,9 @@
 package handler_test
 
 import (
-"familyshare/internal/config"
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"familyshare/internal/config"
 	"familyshare/internal/db"
 	"familyshare/internal/db/sqlc"
 	"familyshare/internal/handler"
@@ -411,4 +412,132 @@ func TestViewShareLink_ValidPhoto(t *testing.T) {
 	if body == "" {
 		t.Error("Expected response body")
 	}
+}
+
+func TestViewShareLink_AlbumPagination(t *testing.T) {
+	h, q, cleanup := setupTestHandlerForShare(t)
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// Create test album
+	album, err := q.CreateAlbum(ctx, sqlc.CreateAlbumParams{
+		Title:       "Large Album",
+		Description: sql.NullString{String: "Album with many photos", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create test album: %v", err)
+	}
+
+	// Create 25 photos to test pagination (20 per page)
+	for i := 1; i <= 25; i++ {
+		_, err := q.CreatePhoto(ctx, sqlc.CreatePhotoParams{
+			AlbumID:   album.ID,
+			Filename:  fmt.Sprintf("photo%d.webp", i),
+			Width:     1920,
+			Height:    1080,
+			SizeBytes: 100000,
+			Format:    "webp",
+		})
+		if err != nil {
+			t.Fatalf("Failed to create photo %d: %v", i, err)
+		}
+	}
+
+	// Create share link
+	_, err = q.CreateShareLink(ctx, sqlc.CreateShareLinkParams{
+		Token:      "test-pagination-token",
+		TargetType: "album",
+		TargetID:   album.ID,
+		MaxViews:   sql.NullInt64{Valid: false},
+		ExpiresAt:  sql.NullTime{Valid: false},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create share link: %v", err)
+	}
+
+	// Test first page
+	t.Run("first page shows load more button", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/s/test-pagination-token", nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("token", "test-pagination-token")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+		w := httptest.NewRecorder()
+
+		h.ViewShareLink(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+
+		body := w.Body.String()
+		// Should contain Load More button
+		if !contains(body, "Load More Photos") {
+			t.Error("Expected to find Load More button on first page")
+		}
+		// Should have photo grid
+		if !contains(body, "photo-grid") {
+			t.Error("Expected to find photo grid")
+		}
+	})
+
+	// Test HTMX partial request
+	t.Run("HTMX request returns partial HTML", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/s/test-pagination-token?page=2", nil)
+		req.Header.Set("HX-Request", "true")
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("token", "test-pagination-token")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+		w := httptest.NewRecorder()
+
+		h.ViewShareLink(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+
+		body := w.Body.String()
+		// Should NOT contain full HTML document
+		if contains(body, "<!DOCTYPE html>") {
+			t.Error("HTMX partial should not contain full HTML document")
+		}
+		// Should contain photo cards
+		if !contains(body, "card-photo") {
+			t.Error("Expected to find photo cards in partial")
+		}
+	})
+
+	// Test last page doesn't show load more
+	t.Run("last page hides load more button", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/s/test-pagination-token?page=2", nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("token", "test-pagination-token")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+		w := httptest.NewRecorder()
+
+		h.ViewShareLink(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+
+		body := w.Body.String()
+		// Should NOT have Load More button (only 25 photos, page 2 has 5 remaining)
+		if contains(body, "Load More Photos") {
+			t.Error("Expected NO Load More button on last page")
+		}
+	})
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || containsHelper(s, substr))
+}
+
+func containsHelper(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

@@ -1,25 +1,27 @@
-# Makefile - repo helper targets
+# Makefile - development helper targets for FamilyShare
 #
-# Usage:
-#   make help
-#   make clean-local-branches-dry   # show branches that would be deleted
-#   make clean-local-branches       # delete local branches merged into origin/main
-#   make clean-local-branches-force # force-delete local branches merged into origin/main
+# This Makefile provides convenience targets used during local development and
+# testing, including building, running locally, generating password hashes,
+# cleaning local git branches, and managing application data during dev.
 
-.PHONY: help clean-local-branches clean-local-branches-dry clean-local-branches-force build run-local hash-password
+.PHONY: help clean-local-branches clean-local-branches-dry clean-local-branches-force build run-local hash-password clean-data clean-data-force
 
 DEFAULT_BRANCH ?= main
 REMOTE ?= origin
 
 help:
-	@echo "Makefile helper targets"
+	@echo "FamilyShare Makefile helper targets"
+	@echo
+	@echo "  build                      - compile binary to bin/familyshare"
+	@echo "  run-local                  - build and run locally (PORT, TEMP_UPLOAD_DIR env vars supported)"
+	@echo "  hash-password              - generate admin password hash (usage: make hash-password PASSWORD=yourpass)"
+	@echo
+	@echo "  clean-data                 - interactively remove ./data (DB, photos)"
+	@echo "  clean-data-force           - non-interactive force clear of ./data"
 	@echo
 	@echo "  clean-local-branches-dry   - show local branches merged into $(REMOTE)/$(DEFAULT_BRANCH) (dry run)"
 	@echo "  clean-local-branches       - delete local branches merged into $(REMOTE)/$(DEFAULT_BRANCH) (safe delete -\d)"
 	@echo "  clean-local-branches-force - force-delete local branches merged into $(REMOTE)/$(DEFAULT_BRANCH) (\-D)"
-	@echo "  build                      - compile binary to bin/familyshare"
-	@echo "  run-local                  - build and run locally (PORT, TEMP_UPLOAD_DIR env vars supported)"
-	@echo "  hash-password              - generate admin password hash (usage: make hash-password PASSWORD=yourpass)"
 
 # Build and run helpers for local testing
 # Usage:
@@ -40,6 +42,25 @@ run-local: build
 	@echo "Preparing local temp upload dir: $(TEMP_UPLOAD_DIR)"
 	@mkdir -p $(TEMP_UPLOAD_DIR)
 	@PORT=$(PORT) TEMP_UPLOAD_DIR=$(TEMP_UPLOAD_DIR) $(BINARY)
+
+# Clear application data directory (destructive)
+# Interactive: asks for confirmation before removing files
+.PHONY: clean-data
+clean-data:
+	@echo "This will remove all files under $(CURDIR)/data (including the DB and photos)."
+	@read -p "Are you sure? (y/N) " yn \
+		&& [ "$$yn" = "y" ] || { echo "Aborted."; exit 0; };
+	@rm -rf $(CURDIR)/data/*
+	@mkdir -p $(CURDIR)/data/photos
+	@echo "Data directory cleared."
+
+# Non-interactive forced clear
+.PHONY: clean-data-force
+clean-data-force:
+	@echo "Force clearing $(CURDIR)/data..."
+	@rm -rf $(CURDIR)/data/*
+	@mkdir -p $(CURDIR)/data/photos
+	@echo "Data directory cleared."
 
 # Generate admin password hash
 # Usage: make hash-password PASSWORD=YourSecurePassword123
