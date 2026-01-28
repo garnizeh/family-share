@@ -32,24 +32,27 @@
     <div style="margin-bottom: var(--space-4);">
         <label for="album_select" class="form-label">Album <span style="color: var(--color-error);">*</span></label>
         <select id="album_select" x-model="selectedAlbumId" :name="targetType === 'album' ? 'target_id' : ''"
-            class="form-input" required>
+            class="form-input" required aria-describedby="album-help">
             <option value="">Select an album</option>
             {{range .Albums}}
             <option value="{{.ID}}">{{.Title}}</option>
             {{end}}
         </select>
-        <p class="form-hint">Select the album{{if .Photos}} (required for both album and photo shares){{end}}</p>
+        <p id="album-help" class="form-hint">Select the album{{if .Photos}} (required for both album and photo
+            shares){{end}}</p>
     </div>
 
     <div x-show="targetType === 'photo'" style="margin-bottom: var(--space-4); display: none;">
         <label for="photo_select" class="form-label">Photo <span style="color: var(--color-error);">*</span></label>
-        <select id="photo_select" name="target_id" class="form-input" :required="targetType === 'photo'">
+        <select id="photo_select" name="target_id" class="form-input" :required="targetType === 'photo'"
+            aria-describedby="photo-help">
             <option value="">Select a photo</option>
             <template x-for="photo in getPhotosForAlbum(selectedAlbumId)" :key="photo.id">
                 <option :value="photo.id" x-text="'Photo ' + photo.id + ' (' + photo.filename + ')'"></option>
             </template>
         </select>
-        <p class="form-hint" x-show="!selectedAlbumId" style="color: var(--color-warning, #f90);">Please select an album
+        <p id="photo-help" class="form-hint" x-show="!selectedAlbumId" style="color: var(--color-warning, #f90);">Please
+            select an album
             first</p>
         <p class="form-hint" x-show="selectedAlbumId && getPhotosForAlbum(selectedAlbumId).length === 0"
             style="color: var(--color-warning, #f90);">This album has no photos</p>
@@ -57,22 +60,25 @@
 
     <div style="margin-bottom: var(--space-4);">
         <label for="max_views" class="form-label">Max Views</label>
-        <input type="number" id="max_views" name="max_views" class="form-input" min="1" placeholder="Unlimited">
-        <p class="form-hint">Leave blank for unlimited views</p>
+        <input type="number" id="max_views" name="max_views" class="form-input" min="1" placeholder="Unlimited"
+            aria-describedby="max-views-help">
+        <p id="max-views-help" class="form-hint">Leave blank for unlimited views</p>
     </div>
 
     <div style="margin-bottom: var(--space-6);">
         <label for="expires_at" class="form-label">Expires At</label>
-        <input type="datetime-local" id="expires_at" name="expires_at" class="form-input">
-        <p class="form-hint">Leave blank for no expiration</p>
+        <input type="datetime-local" id="expires_at" name="expires_at" class="form-input"
+            aria-describedby="expires-help">
+        <p id="expires-help" class="form-hint">Leave blank for no expiration</p>
     </div>
 
-    <div id="share-form-error"
+    <div id="share-form-error" role="alert" aria-live="polite"
         style="display: none; margin-bottom: var(--space-4); padding: var(--space-3); background: var(--color-error-bg, #fee); border: 1px solid var(--color-error, #f00); border-radius: var(--radius-sm, 4px); color: var(--color-error, #f00);">
     </div>
 
     <div style="display: flex; gap: var(--space-3); justify-content: flex-end; align-items: center;">
-        <span id="share-form-spinner" class="htmx-indicator" style="margin-right: auto;">
+        <span id="share-form-spinner" class="htmx-indicator" style="margin-right: auto;" role="status"
+            aria-live="polite" aria-label="Creating share link">
             <svg style="width: 20px; height: 20px; animation: spin 1s linear infinite;" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25" />
                 <path fill="currentColor"

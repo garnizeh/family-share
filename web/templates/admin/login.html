@@ -11,7 +11,8 @@
 
 <body
     style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--color-gray-50);">
-    <div
+    <a href="#main-content" class="skip-to-main">Skip to main content</a>
+    <main id="main-content"
         style="width: 100%; max-width: 400px; padding: var(--space-8); background: white; border-radius: var(--radius-lg); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
         <div style="text-align: center; margin-bottom: var(--space-6);">
             <div style="font-size: 3rem; margin-bottom: var(--space-3);">🔐</div>
@@ -24,7 +25,7 @@
         </div>
 
         {{if .Error}}
-        <div
+        <div id="login-error" role="alert" aria-live="polite"
             style="background: var(--color-error-bg, #fee); border: 1px solid var(--color-error, #c00); color: var(--color-error, #c00); padding: var(--space-3); border-radius: var(--radius-sm); margin-bottom: var(--space-4); font-size: var(--font-size-sm);">
             {{if eq .Error "invalid_password"}}
             ❌ Invalid password. Please try again.
@@ -46,7 +47,7 @@
                     style="display: block; font-weight: 600; margin-bottom: var(--space-2); color: var(--color-gray-700);">
                     Password
                 </label>
-                <input type="password" id="password" name="password" required autofocus
+                <input type="password" id="password" name="password" required autofocus aria-describedby="login-help"
                     style="width: 100%; padding: var(--space-3); border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm); font-size: var(--font-size-base);"
                     placeholder="Enter admin password" autocomplete="current-password">
             </div>
@@ -57,11 +58,11 @@
             </button>
         </form>
 
-        <p
+        <p id="login-help"
             style="text-align: center; color: var(--color-gray-500); font-size: var(--font-size-sm); margin-top: var(--space-6);">
             For security, sessions expire after 24 hours.
         </p>
-    </div>
+    </main>
 </body>
 
 </html>

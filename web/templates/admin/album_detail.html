@@ -56,12 +56,15 @@
                 <div class="upload-zone">
                     <div class="upload-zone-icon">📤</div>
                     <h3 class="upload-zone-title">Upload Photos</h3>
-                    <p class="upload-zone-hint">Select one or more photos (max 25MB each)</p>
-                    <input type="file" name="photos" accept="image/*" multiple required style="margin-bottom: 1rem;">
+                    <p id="upload-help" class="upload-zone-hint">Select one or more photos (max 25MB each)</p>
+                    <label for="album-upload" class="form-label" style="margin-top: var(--space-3);">Choose
+                        files</label>
+                    <input id="album-upload" type="file" name="photos" accept="image/*" multiple required
+                        aria-describedby="upload-help" style="margin-bottom: 1rem;">
                     <button type="submit" class="btn btn-primary">Upload</button>
                 </div>
             </form>
-            <div id="upload-list" class="upload-list mt-4"></div>
+            <div id="upload-list" class="upload-list mt-4" aria-live="polite"></div>
         </section>
 
         <section id="photos-section">
@@ -78,9 +81,14 @@
                     </div>
                     <div class="card-photo-actions">
                         <button hx-post="/admin/photos/{{.ID}}/set-cover" hx-trigger="click" hx-swap="none"
-                            class="btn btn-secondary btn-sm" title="Set as cover photo">⭐</button>
+                            class="btn btn-secondary btn-sm btn-icon" title="Set as cover photo"
+                            aria-label="Set as cover photo">
+                            ⭐
+                        </button>
                         <button @click="deletePhotoId = {{.ID}}; confirmDeletePhotoOpen = true"
-                            class="btn btn-danger btn-sm" title="Delete photo">🗑️</button>
+                            class="btn btn-danger btn-sm btn-icon" title="Delete photo" aria-label="Delete photo">
+                            🗑️
+                        </button>
                     </div>
                 </div>
                 {{end}}
@@ -98,12 +106,14 @@
 
         <!-- Edit Modal -->
         <div id="edit-modal" class="modal" x-show="modalOpen" @click.self="modalOpen = false"
-            @close-modal.window="modalOpen = false" style="display: none;" x-cloak>
+            @close-modal.window="modalOpen = false" style="display: none;" x-cloak role="dialog" aria-modal="true"
+            aria-label="Edit album">
             <div class="modal-backdrop" @click="modalOpen = false"></div>
             <div class="modal-content" @click.stop>
                 <div class="modal-header">
                     <h2 class="modal-title">Edit Album</h2>
-                    <button @click="modalOpen = false" class="modal-close">&times;</button>
+                    <button @click="modalOpen = false" class="modal-close"
+                        aria-label="Close edit album">&times;</button>
                 </div>
                 <div class="modal-body" @htmx:after-swap="modalOpen = true">
                     <!-- Edit form will be loaded here -->
@@ -113,12 +123,13 @@
 
         <!-- Delete Confirmation Modal -->
         <div class="modal" x-show="confirmDeleteOpen" @click.self="confirmDeleteOpen = false" style="display: none;"
-            x-cloak>
+            x-cloak role="dialog" aria-modal="true" aria-label="Delete album confirmation">
             <div class="modal-backdrop" @click="confirmDeleteOpen = false"></div>
             <div class="modal-content" @click.stop style="max-width: 500px;">
                 <div class="modal-header">
                     <h2 class="modal-title">Delete Album</h2>
-                    <button @click="confirmDeleteOpen = false" class="modal-close">&times;</button>
+                    <button @click="confirmDeleteOpen = false" class="modal-close"
+                        aria-label="Close delete album">&times;</button>
                 </div>
                 <div class="modal-body">
                     <p style="margin-bottom: var(--space-4); color: var(--color-gray-700);">
@@ -144,12 +155,13 @@
 
         <!-- Delete Photo Confirmation Modal -->
         <div class="modal" x-show="confirmDeletePhotoOpen" @click.self="confirmDeletePhotoOpen = false"
-            style="display: none;" x-cloak>
+            style="display: none;" x-cloak role="dialog" aria-modal="true" aria-label="Delete photo confirmation">
             <div class="modal-backdrop" @click="confirmDeletePhotoOpen = false"></div>
             <div class="modal-content" @click.stop style="max-width: 500px;">
                 <div class="modal-header">
                     <h2 class="modal-title">Delete Photo</h2>
-                    <button @click="confirmDeletePhotoOpen = false" class="modal-close">&times;</button>
+                    <button @click="confirmDeletePhotoOpen = false" class="modal-close"
+                        aria-label="Close delete photo">&times;</button>
                 </div>
                 <div class="modal-body">
                     <p style="margin-bottom: var(--space-4); color: var(--color-gray-700);">
@@ -196,11 +208,12 @@
 
         <!-- Photo Lightbox Modal -->
         <div class="modal" x-show="lightboxOpen" @click.self="lightboxOpen = false"
-            @keydown.escape.window="lightboxOpen = false" style="display: none;" x-cloak>
+            @keydown.escape.window="lightboxOpen = false" style="display: none;" x-cloak role="dialog" aria-modal="true"
+            aria-label="Photo lightbox">
             <div class="modal-backdrop" @click="lightboxOpen = false" style="background: rgba(0, 0, 0, 0.95);"></div>
             <div style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1001; padding: var(--space-4);"
                 @click.stop>
-                <button @click="lightboxOpen = false"
+                <button @click="lightboxOpen = false" aria-label="Close lightbox"
                     style="position: absolute; top: var(--space-4); right: var(--space-4); background: rgba(0, 0, 0, 0.7); color: white; border: none; font-size: 2rem; width: 3rem; height: 3rem; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1002;"
                     title="Close (Esc)">&times;</button>
                 <div style="max-width: 95vw; max-height: 95vh; display: flex; flex-direction: column; align-items: center;"
