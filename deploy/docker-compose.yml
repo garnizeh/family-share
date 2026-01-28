@@ -1,0 +1,46 @@
+services:
+  app:
+    image: ghcr.io/your-org/familyshare:latest
+    env_file: .env
+    environment:
+      SERVER_ADDR: ":8080"
+      DATA_DIR: "/app/data"
+      DATABASE_PATH: "/app/data/familyshare.db"
+      TEMP_UPLOAD_DIR: "/app/tmp_uploads"
+    volumes:
+      - ./data:/app/data
+      - ./tmp_uploads:/app/tmp_uploads
+    restart: unless-stopped
+    networks:
+      - web
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+    networks:
+      - web
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  web:
+
+
+volumes:
+  caddy_data:
+  caddy_config:
