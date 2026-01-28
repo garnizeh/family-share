@@ -30,12 +30,15 @@ func TestSaveProcessedImage_Success(t *testing.T) {
 	}
 
 	data := []byte("webpdata")
-	photoID, path, err := SaveProcessedImage(ctx, d, alb.ID, bytes.NewReader(data), 100, 50, len(data), "webp")
+	photoID, path, photo, err := SaveProcessedImage(ctx, d, alb.ID, bytes.NewReader(data), 100, 50, len(data), "webp")
 	if err != nil {
 		t.Fatalf("SaveProcessedImage failed: %v", err)
 	}
 	if photoID == 0 {
 		t.Fatalf("expected non-zero photoID")
+	}
+	if photo == nil {
+		t.Fatal("expected non-nil photo")
 	}
 	// verify file exists and contents match
 	if _, err := os.Stat(path); err != nil {
@@ -83,7 +86,7 @@ func TestSaveProcessedImage_WriteFailure_RollsBack(t *testing.T) {
 	}
 
 	data := []byte("webpdata")
-	_, _, err = SaveProcessedImage(ctx, d, alb.ID, bytes.NewReader(data), 100, 50, len(data), "webp")
+	_, _, _, err = SaveProcessedImage(ctx, d, alb.ID, bytes.NewReader(data), 100, 50, len(data), "webp")
 	if err == nil {
 		t.Fatalf("expected error when storage path is blocked")
 	}

@@ -1,7 +1,6 @@
 package handler_test
 
 import (
-"familyshare/internal/config"
 	"bytes"
 	"context"
 	"database/sql"
@@ -19,10 +18,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"familyshare/internal/db"
+	"familyshare/internal/config"
 	"familyshare/internal/db/sqlc"
 	"familyshare/internal/handler"
 	"familyshare/internal/storage"
+	"familyshare/internal/testutil"
 	"familyshare/web"
 )
 
@@ -56,24 +56,16 @@ func attachFile(t *testing.T, mw *multipart.Writer, field, filename string, r io
 }
 
 func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
-	dbConn, err := db.InitDB(":memory:")
-	if err != nil {
-		t.Fatalf("InitDB: %v", err)
-	}
-	defer dbConn.Close()
+	dbConn, q, dbCleanup := testutil.SetupTestDB(t)
+	defer dbCleanup()
 
-	// storage path in a temp dir
-	tmpd, err := os.MkdirTemp("", "fs-test-storage-")
-	if err != nil {
-		t.Fatalf("mktemp: %v", err)
-	}
-	defer os.RemoveAll(tmpd)
-	os.Setenv("STORAGE_PATH", tmpd)
+	storageDir, storageCleanup := testutil.SetupTestStorage(t)
+	defer storageCleanup()
+	t.Setenv("STORAGE_PATH", storageDir)
 
-	store := storage.New(tmpd)
+	store := storage.New(storageDir)
 	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
-	q := sqlc.New(dbConn)
 	album, err := q.CreateAlbum(context.Background(), sqlc.CreateAlbumParams{Title: "test", Description: sql.NullString{String: "", Valid: false}})
 	if err != nil {
 		t.Fatalf("create album: %v", err)
@@ -97,25 +89,25 @@ func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
 	h.AdminUploadPhotos(w, req)
 	res := w.Result()
 	if res.StatusCode != 200 {
-		t.Fatalf("single upload status: %d", res.StatusCode)
+		t.Fatalf("single upload status: %d, body: %s", res.StatusCode, w.Body.String())
 	}
 	buf := w.Body.String()
 	if !strings.Contains(buf, "Successfully uploaded (ID:") {
 		t.Fatalf("expected uploaded partial, got body: %s", buf)
 	}
 
-	// verify a photo file was written under STORAGE_PATH
+	// verify a photo file was written under storage directory
 	// photos are stored under storage.PhotoPath(base, albumID, photoID, ext)
-	// find any file under tmpd recursively
+	// find any file under storageDir recursively
 	var found bool
-	filepath.Walk(tmpd, func(p string, info os.FileInfo, err error) error {
+	filepath.Walk(storageDir, func(p string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() {
 			found = true
 		}
 		return nil
 	})
 	if !found {
-		t.Fatalf("expected stored photo file in %s", tmpd)
+		t.Fatalf("expected stored photo file in %s", storageDir)
 	}
 
 	// --- Batch upload (3 files) ---
@@ -165,23 +157,15 @@ func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
 }
 
 func TestAdminUpload_SizeLimitRejection(t *testing.T) {
-	dbConn, err := db.InitDB(":memory:")
-	if err != nil {
-		t.Fatalf("InitDB: %v", err)
-	}
-	defer dbConn.Close()
+	dbConn, q, dbCleanup := testutil.SetupTestDB(t)
+	defer dbCleanup()
 
-	tmpd, err := os.MkdirTemp("", "fs-test-storage-")
-	if err != nil {
-		t.Fatalf("mktemp: %v", err)
-	}
-	defer os.RemoveAll(tmpd)
-	os.Setenv("STORAGE_PATH", tmpd)
+	storageDir, storageCleanup := testutil.SetupTestStorage(t)
+	defer storageCleanup()
 
-	store := storage.New(tmpd)
+	store := storage.New(storageDir)
 	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
 
-	q := sqlc.New(dbConn)
 	album, err := q.CreateAlbum(context.Background(), sqlc.CreateAlbumParams{Title: "test", Description: sql.NullString{String: "", Valid: false}})
 	if err != nil {
 		t.Fatalf("create album: %v", err)

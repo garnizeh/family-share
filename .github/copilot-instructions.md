@@ -12,6 +12,8 @@ You are acting as an expert Go and UX Developer. This project is a lightweight, 
 6. Keep the tech stack minimal and easy to maintain.
 7. Focus on server-side rendering with minimal JavaScript.
 8. Ensure a smooth and intuitive user experience for non-technical family members.
+9. **Terminal environment:** Commands run in WSL (Ubuntu) using oh-my-zsh. The prompt shows a trailing `─╯` after commands; it is not the command output. Always wait for the command to fully complete and return output before taking any further action.
+10. **Terminal usage in this environment:** Prefer running terminal commands in background mode and then fetch output using the terminal output tool. Do not assume the command finished just because the prompt marker `─╯` appears.
 
 ## Core Tech Stack
 - **Backend:** Go (Golang) using `net/http` or `chi` router.
