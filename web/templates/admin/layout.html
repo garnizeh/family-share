@@ -1,15 +1,16 @@
 {{define "admin_nav.html"}}
-<nav class="admin-nav">
-    <div class="admin-nav-container">
+<nav class="admin-nav" aria-label="Primary">
+    <div class="admin-nav-container" x-data="{ open: false }">
         <div class="admin-nav-brand">
             <h1>📸 FamilyShare</h1>
         </div>
 
-        <button class="nav-toggle" x-data @click="$refs.menu.classList.toggle('show-mobile')" aria-label="Toggle menu">
+        <button class="nav-toggle" @click="open = !open" :aria-expanded="open.toString()" aria-label="Toggle menu"
+            aria-controls="admin-nav-menu">
             ☰
         </button>
 
-        <ul class="admin-nav-menu" x-ref="menu">
+        <ul id="admin-nav-menu" class="admin-nav-menu" x-ref="menu" :class="{ 'show-mobile': open }">
             <li><a href="/admin">Dashboard</a></li>
             <li><a href="/admin/albums">Albums</a></li>
             <li><a href="/admin/shares">Share Links</a></li>
