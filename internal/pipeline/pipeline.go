@@ -46,15 +46,10 @@ func ProcessAndSave(
 
 	sizeBytes := buf.Len()
 	// Save encoded data and create DB record
-	photoID, _, err := SaveProcessedImage(ctx, db, albumID, bytes.NewReader(buf.Bytes()), img.Bounds().Dx(), img.Bounds().Dy(), sizeBytes, "webp")
+	_, _, photo, err := SaveProcessedImage(ctx, db, albumID, bytes.NewReader(buf.Bytes()), img.Bounds().Dx(), img.Bounds().Dy(), sizeBytes, "webp")
 	if err != nil {
 		return nil, fmt.Errorf("save processed image: %w", err)
 	}
 
-	q := sqlc.New(db)
-	p, err := q.GetPhoto(ctx, photoID)
-	if err != nil {
-		return nil, fmt.Errorf("get photo: %w", err)
-	}
-	return &p, nil
+	return photo, nil
 }

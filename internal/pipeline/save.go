@@ -24,11 +24,11 @@ func SaveProcessedImage(
 	encodedData io.Reader,
 	width, height, sizeBytes int,
 	format string,
-) (int64, string, error) {
+) (int64, string, *sqlc.Photo, error) {
 	// begin transaction
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, "", fmt.Errorf("begin tx: %w", err)
+		return 0, "", nil, fmt.Errorf("begin tx: %w", err)
 	}
 	// ensure rollback on any early return
 	defer func() {
@@ -52,7 +52,7 @@ func SaveProcessedImage(
 		Format:    ext,
 	})
 	if err != nil {
-		return 0, "", fmt.Errorf("create photo record: %w", err)
+		return 0, "", nil, fmt.Errorf("create photo record: %w", err)
 	}
 
 	// determine storage path using env-configured base dir
@@ -66,14 +66,14 @@ func SaveProcessedImage(
 	if err := storage.AtomicWrite(path, encodedData); err != nil {
 		// ensure DB record is not left behind
 		// rollback will remove the inserted row because tx not committed
-		return 0, "", fmt.Errorf("atomic write: %w", err)
+		return 0, "", nil, fmt.Errorf("atomic write: %w", err)
 	}
 
 	// commit transaction now that file exists
 	if err := tx.Commit(); err != nil {
 		// try to remove file on commit failure
 		_ = os.Remove(path)
-		return 0, "", fmt.Errorf("commit tx: %w", err)
+		return 0, "", nil, fmt.Errorf("commit tx: %w", err)
 	}
 
 	// Log upload event (fire and forget, don't fail upload if logging fails)
@@ -84,7 +84,7 @@ func SaveProcessedImage(
 		}
 	}()
 
-	return p.ID, path, nil
+	return p.ID, path, &p, nil
 }
 
 // logUploadEvent logs an upload activity event

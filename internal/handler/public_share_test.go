@@ -12,25 +12,24 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"familyshare/internal/config"
-	"familyshare/internal/db"
 	"familyshare/internal/db/sqlc"
 	"familyshare/internal/handler"
 	"familyshare/internal/storage"
+	"familyshare/internal/testutil"
 	"familyshare/web"
 )
 
 func setupTestHandlerForShare(t *testing.T) (*handler.Handler, *sqlc.Queries, func()) {
-	dbConn, err := db.InitDB(":memory:")
-	if err != nil {
-		t.Fatalf("InitDB: %v", err)
-	}
+	dbConn, q, dbCleanup := testutil.SetupTestDB(t)
 
-	store := storage.New(t.TempDir())
+	storageDir, storageCleanup := testutil.SetupTestStorage(t)
+	t.Setenv("STORAGE_PATH", storageDir)
+	store := storage.New(storageDir)
 	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
-	q := sqlc.New(dbConn)
 
 	cleanup := func() {
-		dbConn.Close()
+		storageCleanup()
+		dbCleanup()
 	}
 
 	return h, q, cleanup
