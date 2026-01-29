@@ -27,10 +27,6 @@ func TestProcessAndSave_JPEG(t *testing.T) {
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	defer storageCleanup()
 
-	// Set storage path for the test
-	os.Setenv("STORAGE_PATH", storageDir)
-	defer os.Unsetenv("STORAGE_PATH")
-
 	ctx := context.Background()
 
 	// Create test album
@@ -40,7 +36,7 @@ func TestProcessAndSave_JPEG(t *testing.T) {
 	imgReader := testutil.LoadTestImage(t, "sample.jpg")
 
 	// Process and save the image
-	photo, err := pipeline.ProcessAndSave(ctx, db, album.ID, imgReader.(*bytes.Reader), 10<<20)
+	photo, err := pipeline.ProcessAndSave(ctx, db, album.ID, imgReader.(*bytes.Reader), 10<<20, storageDir)
 	if err != nil {
 		t.Fatalf("ProcessAndSave failed: %v", err)
 	}
@@ -108,9 +104,6 @@ func TestProcessAndSave_PNG(t *testing.T) {
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	defer storageCleanup()
 
-	os.Setenv("STORAGE_PATH", storageDir)
-	defer os.Unsetenv("STORAGE_PATH")
-
 	ctx := context.Background()
 
 	album := testutil.CreateTestAlbum(t, q, "PNG Test Album", "")
@@ -118,7 +111,7 @@ func TestProcessAndSave_PNG(t *testing.T) {
 	// Load test PNG image
 	imgReader := testutil.LoadTestImage(t, "sample.png")
 
-	photo, err := pipeline.ProcessAndSave(ctx, db, album.ID, imgReader.(*bytes.Reader), 10<<20)
+	photo, err := pipeline.ProcessAndSave(ctx, db, album.ID, imgReader.(*bytes.Reader), 10<<20, storageDir)
 	if err != nil {
 		t.Fatalf("ProcessAndSave failed for PNG: %v", err)
 	}
@@ -149,9 +142,6 @@ func TestProcessAndSave_LargeImage_Resized(t *testing.T) {
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	defer storageCleanup()
 
-	os.Setenv("STORAGE_PATH", storageDir)
-	defer os.Unsetenv("STORAGE_PATH")
-
 	ctx := context.Background()
 
 	album := testutil.CreateTestAlbum(t, q, "Large Image Test", "")
@@ -159,7 +149,7 @@ func TestProcessAndSave_LargeImage_Resized(t *testing.T) {
 	// Generate a large image (3000x2000)
 	largeImg := testutil.GenerateTestImage(t, "jpeg", 3000, 2000)
 
-	photo, err := pipeline.ProcessAndSave(ctx, db, album.ID, largeImg, 50<<20)
+	photo, err := pipeline.ProcessAndSave(ctx, db, album.ID, largeImg, 50<<20, storageDir)
 	if err != nil {
 		t.Fatalf("ProcessAndSave failed for large image: %v", err)
 	}
@@ -193,9 +183,6 @@ func TestProcessAndSave_FileTooLarge(t *testing.T) {
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	defer storageCleanup()
 
-	os.Setenv("STORAGE_PATH", storageDir)
-	defer os.Unsetenv("STORAGE_PATH")
-
 	ctx := context.Background()
 
 	album := testutil.CreateTestAlbum(t, q, "Size Limit Test", "")
@@ -203,7 +190,7 @@ func TestProcessAndSave_FileTooLarge(t *testing.T) {
 	imgReader := testutil.LoadTestImage(t, "sample.jpg")
 
 	// Set max bytes to 1KB (too small for any image)
-	_, err := pipeline.ProcessAndSave(ctx, db, album.ID, imgReader.(*bytes.Reader), 1024)
+	_, err := pipeline.ProcessAndSave(ctx, db, album.ID, imgReader.(*bytes.Reader), 1024, storageDir)
 
 	// Should fail due to size limit
 	if err == nil {
@@ -221,9 +208,6 @@ func TestProcessAndSave_Rollback_OnFileWriteFailure(t *testing.T) {
 
 	// Use invalid storage directory to force write failure
 	invalidDir := "/invalid/path/that/does/not/exist"
-	os.Setenv("STORAGE_PATH", invalidDir)
-	defer os.Unsetenv("STORAGE_PATH")
-
 	ctx := context.Background()
 
 	album := testutil.CreateTestAlbum(t, q, "Rollback Test", "")
@@ -231,7 +215,7 @@ func TestProcessAndSave_Rollback_OnFileWriteFailure(t *testing.T) {
 	imgReader := testutil.LoadTestImage(t, "sample.jpg")
 
 	// Should fail to save file
-	_, err := pipeline.ProcessAndSave(ctx, db, album.ID, imgReader.(*bytes.Reader), 10<<20)
+	_, err := pipeline.ProcessAndSave(ctx, db, album.ID, imgReader.(*bytes.Reader), 10<<20, invalidDir)
 	if err == nil {
 		t.Fatal("expected error when storage path is invalid")
 	}
@@ -262,9 +246,6 @@ func TestProcessAndSave_CreatedAtTimestamp(t *testing.T) {
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	defer storageCleanup()
 
-	os.Setenv("STORAGE_PATH", storageDir)
-	defer os.Unsetenv("STORAGE_PATH")
-
 	ctx := context.Background()
 
 	album := testutil.CreateTestAlbum(t, q, "Timestamp Test", "")
@@ -272,7 +253,7 @@ func TestProcessAndSave_CreatedAtTimestamp(t *testing.T) {
 	before := time.Now().UTC()
 	imgReader := testutil.LoadTestImage(t, "sample.jpg")
 
-	photo, err := pipeline.ProcessAndSave(ctx, db, album.ID, imgReader.(*bytes.Reader), 10<<20)
+	photo, err := pipeline.ProcessAndSave(ctx, db, album.ID, imgReader.(*bytes.Reader), 10<<20, storageDir)
 	if err != nil {
 		t.Fatalf("ProcessAndSave failed: %v", err)
 	}
@@ -309,16 +290,13 @@ func TestProcessAndSave_DirectoryStructure(t *testing.T) {
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	defer storageCleanup()
 
-	os.Setenv("STORAGE_PATH", storageDir)
-	defer os.Unsetenv("STORAGE_PATH")
-
 	ctx := context.Background()
 
 	album := testutil.CreateTestAlbum(t, q, "Directory Test", "")
 
 	imgReader := testutil.LoadTestImage(t, "sample.jpg")
 
-	photo, err := pipeline.ProcessAndSave(ctx, db, album.ID, imgReader.(*bytes.Reader), 10<<20)
+	photo, err := pipeline.ProcessAndSave(ctx, db, album.ID, imgReader.(*bytes.Reader), 10<<20, storageDir)
 	if err != nil {
 		t.Fatalf("ProcessAndSave failed: %v", err)
 	}
