@@ -54,6 +54,7 @@ func main() {
 	jan := janitor.New(janitor.Config{
 		DB:          database,
 		StoragePath: cfg.DataDir,
+		TempUploadDir: cfg.TempUploadDir,
 		Interval:    cfg.JanitorInterval,
 	})
 	ctx, cancel := context.WithCancel(context.Background())

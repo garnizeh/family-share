@@ -32,10 +32,14 @@ func (c *Cleanup) Execute() error {
 	return firstErr
 }
 
-// CleanOrphanedTempFiles removes temp upload files older than maxAge from the system temp dir.
+// CleanOrphanedTempFiles removes temp upload files older than maxAge from a temp dir.
 // It only touches files matching the prefix/suffix pattern used by uploads: "upload-*.tmp".
-func CleanOrphanedTempFiles(maxAge time.Duration) error {
-	tmpDir := os.TempDir()
+// If dir is empty, it defaults to the system temp dir.
+func CleanOrphanedTempFiles(maxAge time.Duration, dir string) error {
+	tmpDir := dir
+	if tmpDir == "" {
+		tmpDir = os.TempDir()
+	}
 	entries, err := os.ReadDir(tmpDir)
 	if err != nil {
 		return err

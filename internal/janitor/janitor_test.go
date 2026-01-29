@@ -389,3 +389,43 @@ func TestJanitorRunsOnStartup(t *testing.T) {
 		t.Error("Janitor should have run cleanup on startup and deleted expired session")
 	}
 }
+
+func TestJanitorCleanupTempFiles_CustomDir(t *testing.T) {
+	database, _, tmpDir := setupTestDB(t)
+	defer database.Close()
+
+	customTemp := filepath.Join(tmpDir, "tmp_uploads")
+	if err := os.MkdirAll(customTemp, 0o700); err != nil {
+		t.Fatalf("mkdir custom temp: %v", err)
+	}
+
+	oldFile := filepath.Join(customTemp, "upload-old.tmp")
+	if err := os.WriteFile(oldFile, []byte("x"), 0o600); err != nil {
+		t.Fatalf("write old temp file: %v", err)
+	}
+	oldTime := time.Now().UTC().Add(-20 * time.Minute)
+	if err := os.Chtimes(oldFile, oldTime, oldTime); err != nil {
+		t.Fatalf("chtimes old temp file: %v", err)
+	}
+
+	newFile := filepath.Join(customTemp, "upload-new.tmp")
+	if err := os.WriteFile(newFile, []byte("y"), 0o600); err != nil {
+		t.Fatalf("write new temp file: %v", err)
+	}
+
+	j := New(Config{
+		DB:            database,
+		StoragePath:   tmpDir,
+		TempUploadDir: customTemp,
+		Interval:      1 * time.Hour,
+	})
+
+	j.cleanupTempFiles()
+
+	if _, err := os.Stat(oldFile); !os.IsNotExist(err) {
+		t.Fatalf("expected old temp file to be removed")
+	}
+	if _, err := os.Stat(newFile); err != nil {
+		t.Fatalf("expected new temp file to remain, stat error: %v", err)
+	}
+}
