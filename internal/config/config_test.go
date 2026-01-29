@@ -16,6 +16,9 @@ func TestLoad_WithEnvVars(t *testing.T) {
 	os.Setenv("RATE_LIMIT_ADMIN", "20")
 	os.Setenv("ADMIN_PASSWORD_HASH", "$2a$10$test_hash")
 	os.Setenv("JANITOR_INTERVAL", "2h30m")
+	os.Setenv("APP_ENV", "production")
+	os.Setenv("VIEWER_HASH_SECRET", "test-secret")
+	os.Setenv("VIEWER_HASH_SECRET_REQUIRED", "true")
 	defer func() {
 		os.Unsetenv("SERVER_ADDR")
 		os.Unsetenv("DATABASE_PATH")
@@ -24,6 +27,9 @@ func TestLoad_WithEnvVars(t *testing.T) {
 		os.Unsetenv("RATE_LIMIT_ADMIN")
 		os.Unsetenv("ADMIN_PASSWORD_HASH")
 		os.Unsetenv("JANITOR_INTERVAL")
+		os.Unsetenv("APP_ENV")
+		os.Unsetenv("VIEWER_HASH_SECRET")
+		os.Unsetenv("VIEWER_HASH_SECRET_REQUIRED")
 	}()
 
 	cfg := config.Load()
@@ -49,6 +55,15 @@ func TestLoad_WithEnvVars(t *testing.T) {
 	if cfg.JanitorInterval != 2*time.Hour+30*time.Minute {
 		t.Errorf("expected JANITOR_INTERVAL 2h30m, got %v", cfg.JanitorInterval)
 	}
+	if cfg.Environment != "production" {
+		t.Errorf("expected APP_ENV production, got %s", cfg.Environment)
+	}
+	if cfg.ViewerHashSecret != "test-secret" {
+		t.Errorf("expected VIEWER_HASH_SECRET test-secret, got %s", cfg.ViewerHashSecret)
+	}
+	if !cfg.RequireViewerHashSecret {
+		t.Errorf("expected VIEWER_HASH_SECRET_REQUIRED true, got false")
+	}
 }
 
 func TestLoad_Defaults(t *testing.T) {
@@ -60,6 +75,9 @@ func TestLoad_Defaults(t *testing.T) {
 	os.Unsetenv("RATE_LIMIT_ADMIN")
 	os.Unsetenv("ADMIN_PASSWORD_HASH")
 	os.Unsetenv("JANITOR_INTERVAL")
+	os.Unsetenv("APP_ENV")
+	os.Unsetenv("VIEWER_HASH_SECRET")
+	os.Unsetenv("VIEWER_HASH_SECRET_REQUIRED")
 
 	cfg := config.Load()
 
@@ -83,6 +101,27 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if cfg.JanitorInterval != 6*time.Hour {
 		t.Errorf("expected default JANITOR_INTERVAL 6h, got %v", cfg.JanitorInterval)
+	}
+	if cfg.Environment != "development" {
+		t.Errorf("expected default APP_ENV development, got %s", cfg.Environment)
+	}
+	if cfg.ViewerHashSecret != "" {
+		t.Errorf("expected default VIEWER_HASH_SECRET empty, got %s", cfg.ViewerHashSecret)
+	}
+	if cfg.RequireViewerHashSecret {
+		t.Errorf("expected default VIEWER_HASH_SECRET_REQUIRED false, got true")
+	}
+}
+
+func TestLoad_ViewerHashSecretRequiredInProduction(t *testing.T) {
+	os.Setenv("APP_ENV", "production")
+	os.Unsetenv("VIEWER_HASH_SECRET_REQUIRED")
+	defer os.Unsetenv("APP_ENV")
+
+	cfg := config.Load()
+
+	if !cfg.RequireViewerHashSecret {
+		t.Errorf("expected viewer hash secret required in production")
 	}
 }
 

@@ -3,11 +3,20 @@ package security
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 )
 
+func TestMain(m *testing.M) {
+	_ = SetViewerHashSecret("test-secret", true)
+	os.Exit(m.Run())
+}
+
 func TestGenerateViewerHash(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
 	token := "test-token-123"
 	ip := "192.168.1.1"
 	userAgent := "Mozilla/5.0"
@@ -27,6 +36,9 @@ func TestGenerateViewerHash(t *testing.T) {
 }
 
 func TestGenerateViewerHash_Uniqueness(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
 	token := "test-token-123"
 	ip := "192.168.1.1"
 	userAgent := "Mozilla/5.0"
@@ -43,6 +55,9 @@ func TestGenerateViewerHash_Uniqueness(t *testing.T) {
 }
 
 func TestGetViewerHash_NewVisitor(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
 	token := "test-token-abc123xyz"
 	req := httptest.NewRequest("GET", "/s/"+token, nil)
 	req.Header.Set("User-Agent", "TestAgent/1.0")
@@ -57,6 +72,9 @@ func TestGetViewerHash_NewVisitor(t *testing.T) {
 }
 
 func TestGetViewerHash_ExistingCookie(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
 	token := "test-token-abc123xyz"
 	existingHash := "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
 
@@ -75,6 +93,9 @@ func TestGetViewerHash_ExistingCookie(t *testing.T) {
 }
 
 func TestSetViewerHashCookie(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
 	token := "test-token-abc123xyz"
 	viewerHash := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
@@ -105,6 +126,9 @@ func TestSetViewerHashCookie(t *testing.T) {
 }
 
 func TestSetViewerHashCookie_WithExpiration(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
 	token := "test-token-abc123xyz"
 	viewerHash := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 	expiresAt := time.Now().Add(2 * time.Hour)
@@ -125,6 +149,9 @@ func TestSetViewerHashCookie_WithExpiration(t *testing.T) {
 }
 
 func TestGetClientIP_RemoteAddr(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
 	req := httptest.NewRequest("GET", "/test", nil)
 	req.RemoteAddr = "192.168.1.100:12345"
 
@@ -135,6 +162,9 @@ func TestGetClientIP_RemoteAddr(t *testing.T) {
 }
 
 func TestGetClientIP_XForwardedFor(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
 	req := httptest.NewRequest("GET", "/test", nil)
 	req.RemoteAddr = "192.168.1.100:12345"
 	req.Header.Set("X-Forwarded-For", "203.0.113.5")
@@ -146,6 +176,9 @@ func TestGetClientIP_XForwardedFor(t *testing.T) {
 }
 
 func TestGetClientIP_XRealIP(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
 	req := httptest.NewRequest("GET", "/test", nil)
 	req.RemoteAddr = "192.168.1.100:12345"
 	req.Header.Set("X-Real-IP", "203.0.113.10")
@@ -153,5 +186,41 @@ func TestGetClientIP_XRealIP(t *testing.T) {
 	ip := getClientIP(req)
 	if ip != "203.0.113.10" {
 		t.Errorf("Expected IP '203.0.113.10', got '%s'", ip)
+	}
+}
+
+func TestGenerateViewerHash_SecretChange(t *testing.T) {
+	if err := SetViewerHashSecret("secret-one", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
+	token := "test-token-123"
+	ip := "192.168.1.1"
+	userAgent := "Mozilla/5.0"
+
+	hash1 := GenerateViewerHash(token, ip, userAgent)
+
+	if err := SetViewerHashSecret("secret-two", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
+	hash2 := GenerateViewerHash(token, ip, userAgent)
+
+	if hash1 == hash2 {
+		t.Error("expected different hashes when secret changes")
+	}
+}
+
+func TestSetViewerHashSecret_EmptyOptional(t *testing.T) {
+	if err := SetViewerHashSecret("", false); err != nil {
+		t.Fatalf("expected no error for empty optional secret, got %v", err)
+	}
+	hash := GenerateViewerHash("token", "1.2.3.4", "agent")
+	if len(hash) != 64 {
+		t.Fatalf("expected hash length 64, got %d", len(hash))
+	}
+}
+
+func TestSetViewerHashSecret_EmptyRequired(t *testing.T) {
+	if err := SetViewerHashSecret("", true); err == nil {
+		t.Fatal("expected error for empty required secret")
 	}
 }
