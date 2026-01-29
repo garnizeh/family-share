@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"familyshare/internal/db"
 	"familyshare/internal/db/sqlc"
@@ -56,7 +57,11 @@ func TestProcessAndSave_Success(t *testing.T) {
 	}
 
 	// verify file exists
-	path := storage.PhotoPath(tmp, alb.ID, photo.ID, photo.Format)
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	path := storage.PhotoPathAt(tmp, alb.ID, photo.ID, photo.Format, createdAt)
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("expected file at %s, stat error: %v", path, err)
 	}

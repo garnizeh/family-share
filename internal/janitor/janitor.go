@@ -134,8 +134,12 @@ func (j *Janitor) deleteOrphanedPhotos(ctx context.Context) {
 
 	deletedCount := 0
 	for _, photo := range photos {
+		createdAt := time.Now().UTC()
+		if photo.CreatedAt.Valid {
+			createdAt = photo.CreatedAt.Time.UTC()
+		}
 		// Delete main photo file
-		photoPath := storage.PhotoPath(j.storagePath, photo.AlbumID, photo.ID, photo.Format)
+		photoPath := storage.PhotoPathAt(j.storagePath, photo.AlbumID, photo.ID, photo.Format, createdAt)
 		if err := j.deleteFile(photoPath); err != nil {
 			log.Printf("Janitor: failed to delete photo file %s: %v", photoPath, err)
 		} else {
@@ -143,7 +147,7 @@ func (j *Janitor) deleteOrphanedPhotos(ctx context.Context) {
 		}
 
 		// Delete thumbnail if exists
-		thumbPath := storage.ThumbnailPath(j.storagePath, photo.AlbumID, photo.ID)
+		thumbPath := storage.ThumbnailPathAt(j.storagePath, photo.AlbumID, photo.ID, createdAt)
 		if err := j.deleteFile(thumbPath); err != nil {
 			// Thumbnails are optional, don't log error if not found
 			if !os.IsNotExist(err) {

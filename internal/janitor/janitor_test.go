@@ -187,7 +187,11 @@ func TestJanitorDeleteOrphanedPhotos(t *testing.T) {
 	}
 
 	// Create photo file on disk
-	photoPath := storage.PhotoPath(tmpDir, photo.AlbumID, photo.ID, photo.Format)
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	photoPath := storage.PhotoPathAt(tmpDir, photo.AlbumID, photo.ID, photo.Format, createdAt)
 	if err := os.MkdirAll(filepath.Dir(photoPath), 0755); err != nil {
 		t.Fatalf("Failed to create photo directory: %v", err)
 	}
@@ -196,7 +200,7 @@ func TestJanitorDeleteOrphanedPhotos(t *testing.T) {
 	}
 
 	// Create thumbnail file
-	thumbPath := storage.ThumbnailPath(tmpDir, photo.AlbumID, photo.ID)
+	thumbPath := storage.ThumbnailPathAt(tmpDir, photo.AlbumID, photo.ID, createdAt)
 	if err := os.WriteFile(thumbPath, []byte("test thumb"), 0644); err != nil {
 		t.Fatalf("Failed to create thumbnail file: %v", err)
 	}
@@ -257,14 +261,18 @@ func TestJanitorDeleteOrphanedPhotos(t *testing.T) {
 	}
 
 	// Create file for this orphaned photo
-	orphanPhotoPath := storage.PhotoPath(tmpDir, 99999, photoForCleanup.ID+1000, photoForCleanup.Format)
+	orphanCreatedAt := time.Now().UTC()
+	if photoForCleanup.CreatedAt.Valid {
+		orphanCreatedAt = photoForCleanup.CreatedAt.Time.UTC()
+	}
+	orphanPhotoPath := storage.PhotoPathAt(tmpDir, 99999, photoForCleanup.ID+1000, photoForCleanup.Format, orphanCreatedAt)
 	if err := os.MkdirAll(filepath.Dir(orphanPhotoPath), 0755); err != nil {
 		t.Fatalf("Failed to create orphan photo directory: %v", err)
 	}
 	if err := os.WriteFile(orphanPhotoPath, []byte("orphan photo"), 0644); err != nil {
 		t.Fatalf("Failed to create orphan photo file: %v", err)
 	}
-	orphanThumbPath := storage.ThumbnailPath(tmpDir, 99999, photoForCleanup.ID+1000)
+	orphanThumbPath := storage.ThumbnailPathAt(tmpDir, 99999, photoForCleanup.ID+1000, orphanCreatedAt)
 	if err := os.WriteFile(orphanThumbPath, []byte("orphan thumb"), 0644); err != nil {
 		t.Fatalf("Failed to create orphan thumbnail file: %v", err)
 	}

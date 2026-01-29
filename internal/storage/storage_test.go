@@ -8,13 +8,18 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestPhotoPathAndThumbnail(t *testing.T) {
 	tmp := t.TempDir()
-	p := PhotoPath(tmp, 42, 7, "webp")
+	createdAt := time.Date(2025, time.December, 5, 12, 0, 0, 0, time.UTC)
+	p := PhotoPathAt(tmp, 42, 7, "webp", createdAt)
 	if !strings.Contains(p, "photos") {
 		t.Fatalf("expected path to contain photos: %s", p)
+	}
+	if !strings.Contains(p, filepath.Join("photos", "2025", "12")) {
+		t.Fatalf("expected path to include year/month from created_at: %s", p)
 	}
 	if !strings.Contains(p, strconv.FormatInt(42, 10)) {
 		t.Fatalf("expected album id in path: %s", p)
@@ -23,7 +28,7 @@ func TestPhotoPathAndThumbnail(t *testing.T) {
 		t.Fatalf("expected suffix 7.webp got: %s", p)
 	}
 
-	th := ThumbnailPath(tmp, 42, 7)
+	th := ThumbnailPathAt(tmp, 42, 7, createdAt)
 	if !strings.HasSuffix(th, "_thumb.webp") {
 		t.Fatalf("expected thumbnail suffix _thumb.webp got: %s", th)
 	}

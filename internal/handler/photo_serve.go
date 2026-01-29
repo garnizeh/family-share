@@ -30,14 +30,17 @@ func (h *Handler) ServePhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Build the file path using storage.PhotoPath
+	// Build the file path using storage.PhotoPathAt
 	// Extract extension from filename
 	ext := strings.ToLower(photo.Format)
 	if ext == "" {
 		ext = "webp"
 	}
-	
-	photoPath := storage.PhotoPath(h.storage.BaseDir, photo.AlbumID, photoID, ext)
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	photoPath := storage.PhotoPathAt(h.storage.BaseDir, photo.AlbumID, photoID, ext, createdAt)
 	
 	// Serve the file
 	http.ServeFile(w, r, photoPath)
@@ -116,7 +119,11 @@ func (h *Handler) ServeSharedPhoto(w http.ResponseWriter, r *http.Request) {
 	if ext == "" {
 		ext = "webp"
 	}
-	photoPath := storage.PhotoPath(h.storage.BaseDir, photo.AlbumID, photo.ID, ext)
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	photoPath := storage.PhotoPathAt(h.storage.BaseDir, photo.AlbumID, photo.ID, ext, createdAt)
 
 	http.ServeFile(w, r, photoPath)
 }

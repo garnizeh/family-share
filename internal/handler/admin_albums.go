@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -193,7 +194,11 @@ func (h *Handler) DeleteAlbum(w http.ResponseWriter, r *http.Request) {
 
 	// Delete all photo files from disk
 	for _, photo := range photos {
-		photoPath := storage.PhotoPath(h.storage.BaseDir, photo.AlbumID, photo.ID, "webp")
+		createdAt := time.Now().UTC()
+		if photo.CreatedAt.Valid {
+			createdAt = photo.CreatedAt.Time.UTC()
+		}
+		photoPath := storage.PhotoPathAt(h.storage.BaseDir, photo.AlbumID, photo.ID, photo.Format, createdAt)
 		// Ignore errors if file doesn't exist
 		_ = os.Remove(photoPath)
 	}

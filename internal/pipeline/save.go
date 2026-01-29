@@ -60,7 +60,11 @@ func SaveProcessedImage(
 	if base == "" {
 		base = "./data"
 	}
-	path := storage.PhotoPath(base, albumID, p.ID, ext)
+	createdAt := time.Now().UTC()
+	if p.CreatedAt.Valid {
+		createdAt = p.CreatedAt.Time.UTC()
+	}
+	path := storage.PhotoPathAt(base, albumID, p.ID, ext, createdAt)
 
 	// attempt atomic write
 	if err := storage.AtomicWrite(path, encodedData); err != nil {
