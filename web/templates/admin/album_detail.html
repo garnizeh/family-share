@@ -73,8 +73,8 @@
             <div id="photos-grid" class="grid-photos">
                 {{range .Photos}}
                 <div class="card card-photo" id="photo-{{.ID}}">
-                    <img src="/data/photos/{{.ID}}.webp" alt="Photo {{.ID}}" class="card-photo-preview" loading="lazy"
-                        @click="lightboxSrc = '/data/photos/{{.ID}}.webp'; lightboxFilename = '{{.Filename}}'; lightboxOpen = true"
+                    <img src="/admin/photos/{{.ID}}.webp" alt="Photo {{.ID}}" class="card-photo-preview" loading="lazy"
+                        @click="lightboxSrc = '/admin/photos/{{.ID}}.webp'; lightboxFilename = '{{.Filename}}'; lightboxOpen = true"
                         style="cursor: pointer;">
                     <div class="card-photo-info">
                         <p class="text-xs text-muted mb-0">{{.Filename}}</p>
