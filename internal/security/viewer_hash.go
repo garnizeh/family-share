@@ -66,7 +66,7 @@ func GenerateViewerHash(token, ip, userAgent string) string {
 
 // GetViewerHash retrieves or creates a viewer hash from/to cookie
 func GetViewerHash(r *http.Request, token string) string {
-	cookieName := "_vh_" + token[:8] // Use first 8 chars of token as cookie prefix
+	cookieName := viewerHashCookieName(token)
 
 	// Try to get existing hash from cookie
 	cookie, err := r.Cookie(cookieName)
@@ -82,7 +82,7 @@ func GetViewerHash(r *http.Request, token string) string {
 
 // SetViewerHashCookie sets the viewer hash cookie
 func SetViewerHashCookie(w http.ResponseWriter, token, viewerHash string, expiresAt *time.Time, opts CookieOptions) {
-	cookieName := "_vh_" + token[:8]
+	cookieName := viewerHashCookieName(token)
 
 	// Default expiration: 30 days or share link expiration, whichever is sooner
 	maxAge := 30 * 24 * 60 * 60 // 30 days in seconds
@@ -104,6 +104,13 @@ func SetViewerHashCookie(w http.ResponseWriter, token, viewerHash string, expire
 	}
 
 	http.SetCookie(w, cookie)
+}
+
+func viewerHashCookieName(token string) string {
+	if len(token) >= 8 {
+		return "_vh_" + token[:8]
+	}
+	return "_vh_short"
 }
 
 // CookieOptions configures cookie security flags.
