@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -56,7 +57,11 @@ func TestDeletePhoto_RemovesFileAndDBRecord(t *testing.T) {
 	}
 
 	// Create actual photo file on disk
-	photoPath := storage.PhotoPath(tempDir, album.ID, photo.ID, "webp")
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	photoPath := storage.PhotoPathAt(tempDir, album.ID, photo.ID, "webp", createdAt)
 	if err := os.MkdirAll(filepath.Dir(photoPath), 0755); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
 	}
@@ -338,7 +343,11 @@ func TestDeletePhoto_ThatIsAlbumCover_ClearsAlbumCover(t *testing.T) {
 	}
 
 	// Create photo file
-	photoPath := storage.PhotoPath(tempDir, album.ID, photo.ID, "webp")
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	photoPath := storage.PhotoPathAt(tempDir, album.ID, photo.ID, "webp", createdAt)
 	if err := os.MkdirAll(filepath.Dir(photoPath), 0755); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
 	}

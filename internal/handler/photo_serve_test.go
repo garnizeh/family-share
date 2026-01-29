@@ -63,7 +63,11 @@ func TestServeSharedPhoto_AllowsWithValidToken(t *testing.T) {
 	if ext == "" {
 		ext = "webp"
 	}
-	path := storage.PhotoPath(storageDir, album.ID, photo.ID, ext)
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	path := storage.PhotoPathAt(storageDir, album.ID, photo.ID, ext, createdAt)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatalf("failed to create photo dir: %v", err)
 	}
@@ -71,7 +75,6 @@ func TestServeSharedPhoto_AllowsWithValidToken(t *testing.T) {
 		t.Fatalf("failed to write photo file: %v", err)
 	}
 
-	// create share link for album
 	token, err := security.GenerateSecureToken()
 	if err != nil {
 		t.Fatalf("failed to generate token: %v", err)
@@ -114,7 +117,11 @@ func TestServeSharedPhoto_DeniesWithInvalidToken(t *testing.T) {
 	if ext == "" {
 		ext = "webp"
 	}
-	path := storage.PhotoPath(storageDir, album.ID, photo.ID, ext)
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	path := storage.PhotoPathAt(storageDir, album.ID, photo.ID, ext, createdAt)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatalf("failed to create photo dir: %v", err)
 	}
@@ -137,6 +144,58 @@ func TestServeSharedPhoto_DeniesWithInvalidToken(t *testing.T) {
 	}
 }
 
+// Test that shared photo path derivation uses the persisted created_at timestamp
+// instead of current time (stable across month/year boundaries).
+func TestServeSharedPhoto_UsesCreatedAtPath(t *testing.T) {
+	db, q, dbCleanup := testutil.SetupTestDB(t)
+	defer dbCleanup()
+
+	storageDir, storageCleanup := testutil.SetupTestStorage(t)
+	defer storageCleanup()
+
+	cfg := &config.Config{DataDir: storageDir, RateLimitShare: 100000}
+	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg)
+
+	album := testutil.CreateTestAlbum(t, q, "Stable Path Album", "")
+	photo := testutil.CreateTestPhoto(t, q, album.ID, "stable.webp")
+
+	createdAt := time.Date(2025, time.December, 15, 10, 30, 0, 0, time.UTC)
+	if _, err := db.Exec("UPDATE photos SET created_at = ? WHERE id = ?", createdAt, photo.ID); err != nil {
+		t.Fatalf("failed to update created_at: %v", err)
+	}
+
+	path := storage.PhotoPathAt(storageDir, album.ID, photo.ID, photo.Format, createdAt)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("failed to create photo dir: %v", err)
+	}
+	if err := os.WriteFile(path, []byte("testdata"), 0644); err != nil {
+		t.Fatalf("failed to write photo file: %v", err)
+	}
+
+	// create share link for album
+	token, err := security.GenerateSecureToken()
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+	timeOut := time.Now().UTC().Add(1 * time.Hour)
+	testutil.CreateTestShareLink(t, q, album.ID, token, 0, timeOut)
+
+	r := chi.NewRouter()
+	h.RegisterRoutes(r)
+
+	url := "/s/" + token + "/photos/" + int64ToStr(photo.ID) + ".webp"
+	req := httptest.NewRequest("GET", url, nil)
+	// Ensure rate limiter sees a unique client IP for this test
+	req.Header.Set("X-Forwarded-For", "203.0.113.7")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 OK for shared photo with stable path, got %d", resp.StatusCode)
+	}
+}
+
 // Test that admin photo route requires authentication
 func TestAdminPhotoRoute_RequiresAuth(t *testing.T) {
 	db, q, dbCleanup := testutil.SetupTestDB(t)
@@ -156,7 +215,11 @@ func TestAdminPhotoRoute_RequiresAuth(t *testing.T) {
 	if ext == "" {
 		ext = "webp"
 	}
-	path := storage.PhotoPath(storageDir, album.ID, photo.ID, ext)
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	path := storage.PhotoPathAt(storageDir, album.ID, photo.ID, ext, createdAt)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatalf("failed to create photo dir: %v", err)
 	}

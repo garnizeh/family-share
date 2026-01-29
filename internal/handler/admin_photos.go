@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -45,7 +46,11 @@ func (h *Handler) DeletePhoto(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delete photo file from disk using the hierarchical path
-	photoPath := storage.PhotoPath(h.storage.BaseDir, photo.AlbumID, id, "webp")
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	photoPath := storage.PhotoPathAt(h.storage.BaseDir, photo.AlbumID, id, photo.Format, createdAt)
 	if err := os.Remove(photoPath); err != nil {
 		log.Printf("failed to delete photo file %s: %v", photoPath, err)
 		// Don't return error - photo already deleted from DB

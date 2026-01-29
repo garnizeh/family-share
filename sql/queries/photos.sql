@@ -30,4 +30,4 @@ SELECT COALESCE(SUM(size_bytes), 0) FROM photos;
 -- name: DeleteOrphanedPhotos :many
 DELETE FROM photos 
 WHERE album_id NOT IN (SELECT id FROM albums)
-RETURNING id, album_id, filename, format;
+RETURNING id, album_id, filename, format, created_at;

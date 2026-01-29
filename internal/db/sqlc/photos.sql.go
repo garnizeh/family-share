@@ -62,14 +62,15 @@ func (q *Queries) CreatePhoto(ctx context.Context, arg CreatePhotoParams) (Photo
 const deleteOrphanedPhotos = `-- name: DeleteOrphanedPhotos :many
 DELETE FROM photos 
 WHERE album_id NOT IN (SELECT id FROM albums)
-RETURNING id, album_id, filename, format
+RETURNING id, album_id, filename, format, created_at
 `
 
 type DeleteOrphanedPhotosRow struct {
-	ID       int64  `json:"id"`
-	AlbumID  int64  `json:"album_id"`
-	Filename string `json:"filename"`
-	Format   string `json:"format"`
+	ID        int64        `json:"id"`
+	AlbumID   int64        `json:"album_id"`
+	Filename  string       `json:"filename"`
+	Format    string       `json:"format"`
+	CreatedAt sql.NullTime `json:"created_at"`
 }
 
 func (q *Queries) DeleteOrphanedPhotos(ctx context.Context) ([]DeleteOrphanedPhotosRow, error) {
@@ -86,6 +87,7 @@ func (q *Queries) DeleteOrphanedPhotos(ctx context.Context) ([]DeleteOrphanedPho
 			&i.AlbumID,
 			&i.Filename,
 			&i.Format,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}

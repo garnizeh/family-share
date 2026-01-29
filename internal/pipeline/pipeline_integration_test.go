@@ -68,7 +68,11 @@ func TestProcessAndSave_JPEG(t *testing.T) {
 	}
 
 	// Verify file exists on disk
-	expectedPath := storage.PhotoPath(storageDir, album.ID, photo.ID, "webp")
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	expectedPath := storage.PhotoPathAt(storageDir, album.ID, photo.ID, "webp", createdAt)
 	if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
 		t.Errorf("expected file to exist at %s", expectedPath)
 	}
@@ -124,7 +128,11 @@ func TestProcessAndSave_PNG(t *testing.T) {
 	}
 
 	// Verify file exists
-	expectedPath := storage.PhotoPath(storageDir, album.ID, photo.ID, "webp")
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	expectedPath := storage.PhotoPathAt(storageDir, album.ID, photo.ID, "webp", createdAt)
 	if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
 		t.Errorf("expected WebP file to exist at %s", expectedPath)
 	}
@@ -316,7 +324,11 @@ func TestProcessAndSave_DirectoryStructure(t *testing.T) {
 	}
 
 	// Verify directory structure follows the expected pattern
-	expectedPath := storage.PhotoPath(storageDir, album.ID, photo.ID, "webp")
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	expectedPath := storage.PhotoPathAt(storageDir, album.ID, photo.ID, "webp", createdAt)
 
 	// Check parent directories were created
 	parentDir := filepath.Dir(expectedPath)
