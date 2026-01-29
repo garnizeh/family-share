@@ -2,19 +2,61 @@ package security
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
+	"log"
 	"net/http"
+	"sync"
 	"time"
 )
 
-// ViewerHashSecret is the secret key for HMAC signing viewer hashes
-// In production, load this from environment variable
-var ViewerHashSecret = []byte("familyshare-viewer-hash-secret-change-in-production")
+var (
+	viewerHashSecretMu sync.RWMutex
+	viewerHashSecret   []byte
+)
+
+// SetViewerHashSecret configures the HMAC secret for viewer hashes.
+// If secret is empty and required is true, it returns an error.
+// If secret is empty and required is false, it logs a warning and uses
+// an ephemeral, random secret for this process.
+func SetViewerHashSecret(secret string, required bool) error {
+	if secret == "" {
+		if required {
+			return fmt.Errorf("VIEWER_HASH_SECRET is required but not set")
+		}
+		buf := make([]byte, 32)
+		if _, err := rand.Read(buf); err != nil {
+			return fmt.Errorf("generate viewer hash secret: %w", err)
+		}
+		viewerHashSecretMu.Lock()
+		viewerHashSecret = buf
+		viewerHashSecretMu.Unlock()
+		log.Printf("warning: VIEWER_HASH_SECRET not set; using ephemeral secret")
+		return nil
+	}
+
+	viewerHashSecretMu.Lock()
+	viewerHashSecret = []byte(secret)
+	viewerHashSecretMu.Unlock()
+	return nil
+}
+
+func getViewerHashSecret() []byte {
+	viewerHashSecretMu.RLock()
+	defer viewerHashSecretMu.RUnlock()
+	return viewerHashSecret
+}
 
 // GenerateViewerHash creates a unique hash for a visitor based on token, IP, and User-Agent
 func GenerateViewerHash(token, ip, userAgent string) string {
-	h := hmac.New(sha256.New, ViewerHashSecret)
+	secret := getViewerHashSecret()
+	if len(secret) == 0 {
+		_ = SetViewerHashSecret("", false)
+		secret = getViewerHashSecret()
+	}
+	h := hmac.New(sha256.New, secret)
 	h.Write([]byte(token))
 	h.Write([]byte(ip))
 	h.Write([]byte(userAgent))

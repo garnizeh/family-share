@@ -14,6 +14,7 @@ import (
 	"familyshare/internal/config"
 	"familyshare/internal/db/sqlc"
 	"familyshare/internal/metrics"
+	"familyshare/internal/security"
 	"familyshare/internal/storage"
 )
 
@@ -29,6 +30,11 @@ type Handler struct {
 }
 
 func New(database *sql.DB, store *storage.Storage, embedFS embed.FS, cfg *config.Config) *Handler {
+	if cfg != nil {
+		if err := security.SetViewerHashSecret(cfg.ViewerHashSecret, cfg.RequireViewerHashSecret); err != nil {
+			log.Fatalf("viewer hash secret configuration error: %v", err)
+		}
+	}
 	// Parse templates from embedded filesystem. Try several common patterns so
 	// New works whether the embed.FS contains files under "web/templates/..."
 	// (cmd embed) or under "templates/..." (web package embed).
