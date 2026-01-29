@@ -248,3 +248,27 @@ func TestSetViewerHashCookie_WithOptions(t *testing.T) {
 		t.Errorf("Expected SameSite=Strict, got %v", cookie.SameSite)
 	}
 }
+
+func TestSetViewerHashCookie_ShortToken(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
+	token := "short"
+	viewerHash := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+
+	w := httptest.NewRecorder()
+	SetViewerHashCookie(w, token, viewerHash, nil, CookieOptions{Secure: false, SameSite: http.SameSiteLaxMode})
+
+	cookies := w.Result().Cookies()
+	if len(cookies) != 1 {
+		t.Fatalf("Expected 1 cookie, got %d", len(cookies))
+	}
+
+	cookie := cookies[0]
+	if cookie.Name != "_vh_short" {
+		t.Errorf("Expected cookie name '_vh_short', got '%s'", cookie.Name)
+	}
+	if cookie.Value != viewerHash {
+		t.Errorf("Expected cookie value %s, got %s", viewerHash, cookie.Value)
+	}
+}
