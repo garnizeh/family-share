@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	webp "github.com/chai2010/webp"
+	"github.com/gen2brain/avif"
 )
 
 // DetectFormat reads up to 512 bytes from r and returns the detected MIME type.
@@ -37,11 +38,16 @@ func ValidateAndDecode(r io.Reader, maxBytes int64) (image.Image, string, error)
 
 	// detect content type
 	ct := http.DetectContentType(data)
+	if isAVIF(data) {
+		ct = "image/avif"
+	}
 
 	var img image.Image
 	var decodeErr error
 
 	switch {
+	case strings.HasPrefix(ct, "image/avif"):
+		img, decodeErr = avif.Decode(bytes.NewReader(data))
 	case strings.HasPrefix(ct, "image/jpeg"):
 		img, decodeErr = jpeg.Decode(bytes.NewReader(data))
 	case strings.HasPrefix(ct, "image/png"):
@@ -66,4 +72,12 @@ func ValidateAndDecode(r io.Reader, maxBytes int64) (image.Image, string, error)
 	}
 
 	return img, ct, nil
+}
+
+func isAVIF(data []byte) bool {
+	if len(data) < 12 {
+		return false
+	}
+	brand := string(data[4:12])
+	return brand == "ftypavif" || brand == "ftypavis"
 }

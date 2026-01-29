@@ -14,6 +14,8 @@ import (
 	"familyshare/internal/db"
 	"familyshare/internal/db/sqlc"
 	"familyshare/internal/storage"
+
+	"github.com/gen2brain/avif"
 )
 
 func makeJPEG(t *testing.T, w, h int) *bytes.Reader {
@@ -106,5 +108,46 @@ func TestProcessAndSave_WriteFailure_RollsBack(t *testing.T) {
 	}
 	if len(list) != 0 {
 		t.Fatalf("expected no photos after failed save, got %d", len(list))
+	}
+}
+
+func TestProcessAndSaveWithFormat_AVIF(t *testing.T) {
+	tmp := t.TempDir()
+	os.Setenv("STORAGE_PATH", tmp)
+
+	dbPath := filepath.Join(tmp, "test-avif.db")
+	d, err := db.InitDB(dbPath)
+	if err != nil {
+		t.Fatalf("init db: %v", err)
+	}
+	defer d.Close()
+
+	ctx := context.Background()
+	q := sqlc.New(d)
+	alb, err := q.CreateAlbum(ctx, sqlc.CreateAlbumParams{Title: "test avif"})
+	if err != nil {
+		t.Fatalf("create album: %v", err)
+	}
+
+	r := makeJPEG(t, 200, 100)
+	photo, err := ProcessAndSaveWithFormat(ctx, d, alb.ID, r, 10<<20, tmp, "avif")
+	if err != nil {
+		t.Fatalf("process and save failed: %v", err)
+	}
+	if photo.Format != "avif" {
+		t.Fatalf("expected format avif, got %s", photo.Format)
+	}
+
+	createdAt := time.Now().UTC()
+	if photo.CreatedAt.Valid {
+		createdAt = photo.CreatedAt.Time.UTC()
+	}
+	path := storage.PhotoPathAt(tmp, alb.ID, photo.ID, photo.Format, createdAt)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read avif file: %v", err)
+	}
+	if _, err := avif.Decode(bytes.NewReader(data)); err != nil {
+		t.Fatalf("decode avif failed: %v", err)
 	}
 }

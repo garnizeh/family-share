@@ -7,6 +7,8 @@ import (
 	"image/png"
 	"io"
 	"testing"
+
+	"github.com/gen2brain/avif"
 )
 
 func encodeJPEG(w io.Writer) error {
@@ -47,6 +49,24 @@ func TestValidateAndDecodePNG(t *testing.T) {
 	}
 	if img == nil {
 		t.Fatalf("expected image, got nil")
+	}
+}
+
+func TestValidateAndDecodeAVIF(t *testing.T) {
+	img := image.NewRGBA(image.Rect(0, 0, 16, 16))
+	var b bytes.Buffer
+	if err := avif.Encode(&b, img, avif.Options{Quality: 60, Speed: 6}); err != nil {
+		t.Fatalf("encode avif: %v", err)
+	}
+	decoded, ct, err := ValidateAndDecode(bytes.NewReader(b.Bytes()), 1<<20)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if decoded == nil {
+		t.Fatalf("expected image, got nil")
+	}
+	if ct != "image/avif" {
+		t.Fatalf("expected image/avif, got %s", ct)
 	}
 }
 

@@ -5,7 +5,7 @@ Lightweight, self-hosted photo sharing for families on low-resource VPS.
 This repository contains the Go backend and SSR frontend. See `.docs/` for design notes and task backlog.
 
 ## Features
-- Zero-waste storage: uploads are resized and converted to WebP
+- Zero-waste storage: uploads are resized and converted to WebP (default) or AVIF (optional)
 - Magic link sharing with view/time limits
 - Simple admin UI (no SPA)
 - Mobile-first UX
@@ -15,6 +15,13 @@ This repository contains the Go backend and SSR frontend. See `.docs/` for desig
 - Go (`net/http`, `chi`)
 - SQLite (pure Go, no CGO)
 - HTML templates + Tailwind CSS
+
+## Image Encoders
+FamilyShare uses a lightweight image pipeline designed for low-resource servers:
+- **WebP** (default): encoded with `github.com/chai2010/webp` at 80% quality.
+- **AVIF** (optional): encoded with `github.com/gen2brain/avif` (CGO-free, WASM fallback) using quality 60 and speed 6.
+
+To enable AVIF output, set `IMAGE_FORMAT=avif` in your environment (see `.env.example`). If unset, the pipeline defaults to WebP.
 
 ## Quick Start (Local)
 1. Copy `.env.example` to `.env` and edit values.
@@ -64,6 +71,9 @@ See `.docs/troubleshooting.md`.
 ## FAQ
 **Q: Are original photos stored?**
 A: No. Photos are resized and converted to WebP to save space.
+
+**Q: Can I use AVIF instead of WebP?**
+A: Yes. Set `IMAGE_FORMAT=avif` to encode uploads as AVIF. WebP remains the default.
 
 **Q: Do viewers need an account?**
 A: No. Access is via share links only.
