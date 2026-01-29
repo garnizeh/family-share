@@ -1,8 +1,8 @@
 package handler_test
 
 import (
-"familyshare/internal/config"
 	"context"
+	"familyshare/internal/config"
 	"net/http"
 	"net/http/httptest"
 	"net/url"

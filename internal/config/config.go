@@ -9,20 +9,22 @@ import (
 )
 
 type Config struct {
-	ServerAddr   string
-	DatabasePath string
-	DataDir      string
-	Environment  string
-	
+	ServerAddr     string
+	DatabasePath   string
+	DataDir        string
+	Environment    string
+	ForceHTTPS     bool
+	CookieSameSite string
+
 	// Rate limiting configuration
 	RateLimitShare int // requests per minute for share links
 	RateLimitAdmin int // requests per minute for admin endpoints
-	
+
 	// Admin authentication
-	AdminPasswordHash string // bcrypt hash of admin password
-	ViewerHashSecret  string // HMAC secret for viewer hash
-	RequireViewerHashSecret bool // require viewer hash secret (fail if missing)
-	
+	AdminPasswordHash       string // bcrypt hash of admin password
+	ViewerHashSecret        string // HMAC secret for viewer hash
+	RequireViewerHashSecret bool   // require viewer hash secret (fail if missing)
+
 	// Janitor configuration
 	JanitorInterval time.Duration // interval for cleanup tasks
 }
@@ -30,21 +32,23 @@ type Config struct {
 func Load() *Config {
 	// Load .env file if it exists (ignore error if file doesn't exist)
 	_ = godotenv.Load()
-	
+
 	env := getEnv("APP_ENV", "development")
 	requireViewerHashSecret := getEnvBool("VIEWER_HASH_SECRET_REQUIRED", env == "production")
-		
+
 	return &Config{
-		ServerAddr:        getEnv("SERVER_ADDR", ":8080"),
-		DatabasePath:      getEnv("DATABASE_PATH", "./data/familyshare.db"),
-		DataDir:           getEnv("DATA_DIR", "./data"),
-		Environment:       env,
-		RateLimitShare:    getEnvInt("RATE_LIMIT_SHARE", 60),
-		RateLimitAdmin:    getEnvInt("RATE_LIMIT_ADMIN", 10),
-		AdminPasswordHash: getEnv("ADMIN_PASSWORD_HASH", ""),
-		ViewerHashSecret:  getEnv("VIEWER_HASH_SECRET", ""),
+		ServerAddr:              getEnv("SERVER_ADDR", ":8080"),
+		DatabasePath:            getEnv("DATABASE_PATH", "./data/familyshare.db"),
+		DataDir:                 getEnv("DATA_DIR", "./data"),
+		Environment:             env,
+		ForceHTTPS:              getEnvBool("FORCE_HTTPS", env == "production"),
+		CookieSameSite:          getEnv("COOKIE_SAMESITE", "Lax"),
+		RateLimitShare:          getEnvInt("RATE_LIMIT_SHARE", 60),
+		RateLimitAdmin:          getEnvInt("RATE_LIMIT_ADMIN", 10),
+		AdminPasswordHash:       getEnv("ADMIN_PASSWORD_HASH", ""),
+		ViewerHashSecret:        getEnv("VIEWER_HASH_SECRET", ""),
 		RequireViewerHashSecret: requireViewerHashSecret,
-		JanitorInterval:   getEnvDuration("JANITOR_INTERVAL", 6*time.Hour),
+		JanitorInterval:         getEnvDuration("JANITOR_INTERVAL", 6*time.Hour),
 	}
 }
 

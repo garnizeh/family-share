@@ -308,11 +308,11 @@ func TestRateLimit_CleanupRemovesStaleEntries(t *testing.T) {
 
 func TestGetClientIP(t *testing.T) {
 	tests := []struct {
-		name           string
-		remoteAddr     string
-		xForwardedFor  string
-		xRealIP        string
-		expectedIP     string
+		name          string
+		remoteAddr    string
+		xForwardedFor string
+		xRealIP       string
+		expectedIP    string
 	}{
 		{
 			name:       "Direct connection",
@@ -367,7 +367,7 @@ func TestGetClientIP(t *testing.T) {
 
 func TestRateLimit_HelperFunction(t *testing.T) {
 	middleware := RateLimit(5)
-	
+
 	handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))

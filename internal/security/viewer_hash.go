@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -80,7 +81,7 @@ func GetViewerHash(r *http.Request, token string) string {
 }
 
 // SetViewerHashCookie sets the viewer hash cookie
-func SetViewerHashCookie(w http.ResponseWriter, token, viewerHash string, expiresAt *time.Time) {
+func SetViewerHashCookie(w http.ResponseWriter, token, viewerHash string, expiresAt *time.Time, opts CookieOptions) {
 	cookieName := "_vh_" + token[:8]
 
 	// Default expiration: 30 days or share link expiration, whichever is sooner
@@ -98,11 +99,31 @@ func SetViewerHashCookie(w http.ResponseWriter, token, viewerHash string, expire
 		Path:     "/s/" + token,
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   false, // Set to true in production with HTTPS
+		SameSite: opts.SameSite,
+		Secure:   opts.Secure,
 	}
 
 	http.SetCookie(w, cookie)
+}
+
+// CookieOptions configures cookie security flags.
+type CookieOptions struct {
+	Secure   bool
+	SameSite http.SameSite
+}
+
+// ParseSameSite converts a string to an http.SameSite value (default Lax).
+func ParseSameSite(value string) http.SameSite {
+	switch strings.ToLower(value) {
+	case "strict":
+		return http.SameSiteStrictMode
+	case "none":
+		return http.SameSiteNoneMode
+	case "lax":
+		fallthrough
+	default:
+		return http.SameSiteLaxMode
+	}
 }
 
 // getClientIP extracts the client IP from the request

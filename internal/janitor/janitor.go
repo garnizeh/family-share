@@ -112,7 +112,7 @@ func (j *Janitor) deleteExpiredShareLinks(ctx context.Context) {
 		log.Printf("Janitor: failed to delete expired share links: %v", err)
 		return
 	}
-	
+
 	if len(links) > 0 {
 		log.Printf("Janitor: deleted %d expired/revoked share links", len(links))
 	}
@@ -157,7 +157,7 @@ func (j *Janitor) deleteOrphanedPhotos(ctx context.Context) {
 	}
 
 	log.Printf("Janitor: deleted %d orphaned photo files", deletedCount)
-	
+
 	// Clean up empty directories
 	j.cleanupEmptyDirs()
 }
@@ -170,23 +170,23 @@ func (j *Janitor) deleteFile(path string) error {
 // cleanupEmptyDirs removes empty directories in the photos directory structure
 func (j *Janitor) cleanupEmptyDirs() {
 	photosDir := filepath.Join(j.storagePath, "photos")
-	
+
 	// Walk the directory tree from bottom to top
 	filepath.Walk(photosDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil // skip on error
 		}
-		
+
 		// Skip if not a directory or if it's the root photos directory
 		if !info.IsDir() || path == photosDir {
 			return nil
 		}
-		
+
 		// Try to remove empty directories (will fail if not empty)
 		if err := os.Remove(path); err == nil {
 			log.Printf("Janitor: removed empty directory: %s", path)
 		}
-		
+
 		return nil
 	})
 }
@@ -201,7 +201,7 @@ func (j *Janitor) cleanupTempFiles() {
 // deleteOldActivityEvents removes activity events older than 90 days
 func (j *Janitor) deleteOldActivityEvents(ctx context.Context) {
 	ninetyDaysAgo := time.Now().UTC().Add(-90 * 24 * time.Hour)
-	
+
 	err := j.queries.DeleteOldActivityEvents(ctx, sql.NullTime{Time: ninetyDaysAgo, Valid: true})
 	if err != nil {
 		log.Printf("Janitor: failed to delete old activity events: %v", err)
