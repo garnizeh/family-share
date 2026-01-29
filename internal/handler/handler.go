@@ -124,3 +124,14 @@ func (h *Handler) cookieOptions(r *http.Request) security.CookieOptions {
 		SameSite: http.SameSiteLaxMode,
 	}
 }
+
+// cacheWrapper returns a handler that sets Cache-Control header before delegating
+func cacheWrapper(next http.Handler, cacheValue string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Only set cache header for successful GET requests
+		if r.Method == http.MethodGet {
+			w.Header().Set("Cache-Control", cacheValue)
+		}
+		next.ServeHTTP(w, r)
+	})
+}

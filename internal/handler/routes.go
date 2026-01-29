@@ -18,11 +18,14 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Get("/health", h.HealthCheck)
 
 	// Static files (serve from embedded static/ subdirectory)
+	// Static files: serve with long-lived immutable cache headers
 	if sub, err := fs.Sub(h.embedFS, "static"); err == nil {
-		r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
+		staticHandler := http.StripPrefix("/static/", http.FileServer(http.FS(sub)))
+		r.Handle("/static/*", cacheWrapper(staticHandler, "public, max-age=31536000, immutable"))
 	} else {
 		// fall back to the root FS if sub doesn't exist
-		r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(h.embedFS))))
+		staticHandler := http.StripPrefix("/static/", http.FileServer(http.FS(h.embedFS)))
+		r.Handle("/static/*", cacheWrapper(staticHandler, "public, max-age=31536000, immutable"))
 	}
 
 	// Public routes
