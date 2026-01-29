@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	webp "github.com/chai2010/webp"
+	"github.com/gen2brain/avif"
 )
 
 func smallTestImage() image.Image {
@@ -76,5 +77,19 @@ func TestEncodeWebP_IntegrationResizeEncodeDecode(t *testing.T) {
 	}
 	if out.Bounds().Dx() != resized.Bounds().Dx() || out.Bounds().Dy() != resized.Bounds().Dy() {
 		t.Fatalf("decoded dims %vx%v don't match resized %vx%v", out.Bounds().Dx(), out.Bounds().Dy(), resized.Bounds().Dx(), resized.Bounds().Dy())
+	}
+}
+
+func TestEncodeAVIF_ValidImage(t *testing.T) {
+	img := smallTestImage()
+	var buf bytes.Buffer
+	if err := EncodeAVIF(img, &buf, DefaultAVIFQuality, DefaultAVIFSpeed); err != nil {
+		t.Fatalf("EncodeAVIF failed: %v", err)
+	}
+	if buf.Len() == 0 {
+		t.Fatalf("encoded output empty")
+	}
+	if _, err := avif.Decode(bytes.NewReader(buf.Bytes())); err != nil {
+		t.Fatalf("decoded avif failed: %v", err)
 	}
 }
