@@ -17,22 +17,22 @@ type TemplateRenderer interface {
 
 // RateLimiter implements a token bucket algorithm for rate limiting
 type RateLimiter struct {
-	mu              sync.RWMutex
-	requestsPerMin  int
-	clients         map[string]*clientBucket
-	cleanupInterval time.Duration
-	lockoutDuration time.Duration // optional lockout after violations
-	maxViolations   int           // number of violations before lockout
+	mu               sync.RWMutex
+	requestsPerMin   int
+	clients          map[string]*clientBucket
+	cleanupInterval  time.Duration
+	lockoutDuration  time.Duration    // optional lockout after violations
+	maxViolations    int              // number of violations before lockout
 	templateRenderer TemplateRenderer // optional template renderer for nice error pages
 }
 
 // clientBucket tracks tokens and violations for a single client (IP)
 type clientBucket struct {
-	tokens         int
-	lastRefill     time.Time
-	violations     int
-	lockedUntil    time.Time
-	mu             sync.Mutex
+	tokens      int
+	lastRefill  time.Time
+	violations  int
+	lockedUntil time.Time
+	mu          sync.Mutex
 }
 
 // RateLimitConfig holds configuration for rate limiting
@@ -83,18 +83,18 @@ func (rl *RateLimiter) Middleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			clientIP := getClientIP(r)
-			
+
 			allowed, remaining, resetTime := rl.Allow(clientIP)
-			
+
 			// Set rate limit headers
 			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", rl.requestsPerMin))
 			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
 			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%d", resetTime.Unix()))
-			
+
 			if !allowed {
 				log.Printf("Rate limit exceeded for IP: %s on %s", clientIP, r.URL.Path)
 				w.Header().Set("Retry-After", fmt.Sprintf("%d", int(time.Until(resetTime).Seconds())))
-				
+
 				// Try to render nice HTML error page if template renderer is available
 				if rl.templateRenderer != nil {
 					w.WriteHeader(http.StatusTooManyRequests)
@@ -110,12 +110,12 @@ func (rl *RateLimiter) Middleware() func(http.Handler) http.Handler {
 					}
 					return
 				}
-				
+
 				// Fallback to plain text error
 				http.Error(w, "Too many requests. Please try again later.", http.StatusTooManyRequests)
 				return
 			}
-			
+
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -153,7 +153,7 @@ func (rl *RateLimiter) Allow(clientIP string) (bool, int, time.Time) {
 	// Refill tokens based on time elapsed
 	now := time.Now().UTC()
 	elapsed := now.Sub(bucket.lastRefill)
-	
+
 	// Token bucket: refill proportionally to time elapsed
 	// Full refill happens every minute
 	if elapsed >= time.Minute {
@@ -181,11 +181,11 @@ func (rl *RateLimiter) Allow(clientIP string) (bool, int, time.Time) {
 
 	// No tokens available - record violation
 	bucket.violations++
-	
+
 	// Apply lockout if too many violations
 	if rl.lockoutDuration > 0 && bucket.violations >= rl.maxViolations {
 		bucket.lockedUntil = now.Add(rl.lockoutDuration)
-		log.Printf("Client %s locked out until %v after %d violations", 
+		log.Printf("Client %s locked out until %v after %d violations",
 			clientIP, bucket.lockedUntil, bucket.violations)
 		return false, 0, bucket.lockedUntil
 	}

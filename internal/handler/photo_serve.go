@@ -41,7 +41,7 @@ func (h *Handler) ServePhoto(w http.ResponseWriter, r *http.Request) {
 		createdAt = photo.CreatedAt.Time.UTC()
 	}
 	photoPath := storage.PhotoPathAt(h.storage.BaseDir, photo.AlbumID, photoID, ext, createdAt)
-	
+
 	// Serve the file
 	http.ServeFile(w, r, photoPath)
 }

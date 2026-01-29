@@ -102,3 +102,24 @@ func (h *Handler) RenderTemplate(w http.ResponseWriter, name string, data interf
 func IsHTMX(r *http.Request) bool {
 	return r.Header.Get("HX-Request") == "true"
 }
+
+func (h *Handler) cookieOptions(r *http.Request) security.CookieOptions {
+	secure := false
+	if h.config != nil {
+		secure = h.config.ForceHTTPS
+		if !secure {
+			secure = r.TLS != nil
+		}
+		return security.CookieOptions{
+			Secure:   secure,
+			SameSite: security.ParseSameSite(h.config.CookieSameSite),
+		}
+	}
+	if r.TLS != nil {
+		secure = true
+	}
+	return security.CookieOptions{
+		Secure:   secure,
+		SameSite: http.SameSiteLaxMode,
+	}
+}

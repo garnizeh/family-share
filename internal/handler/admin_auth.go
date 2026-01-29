@@ -26,13 +26,13 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	
+
 	data := struct {
 		Error string
 	}{
 		Error: r.URL.Query().Get("error"),
 	}
-	
+
 	if err := h.RenderTemplate(w, "login.html", data); err != nil {
 		log.Printf("template render error: %v", err)
 		http.Error(w, "template render error", http.StatusInternalServerError)
@@ -69,7 +69,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	q := sqlc.New(h.db)
 	expiresAt := time.Now().UTC().Add(sessionDuration)
-	
+
 	_, err = q.CreateSession(r.Context(), sqlc.CreateSessionParams{
 		ID:        sessionID,
 		UserID:    "admin", // For MVP, only one admin user
@@ -82,14 +82,15 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set session cookie
+	cookieOpts := h.cookieOptions(r)
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    sessionID,
 		Path:     "/",
 		Expires:  expiresAt,
 		HttpOnly: true,
-		Secure:   r.TLS != nil, // Secure only if HTTPS
-		SameSite: http.SameSiteLaxMode,
+		Secure:   cookieOpts.Secure,
+		SameSite: cookieOpts.SameSite,
 	})
 
 	log.Printf("Successful login from %s", r.RemoteAddr)
@@ -108,14 +109,15 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Clear cookie
+	cookieOpts := h.cookieOptions(r)
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   cookieOpts.Secure,
+		SameSite: cookieOpts.SameSite,
 	})
 
 	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)

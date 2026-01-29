@@ -1,7 +1,6 @@
 package handler_test
 
 import (
-"familyshare/internal/config"
 	"context"
 	"encoding/json"
 	"io/fs"
@@ -11,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"familyshare/internal/config"
 	"familyshare/internal/db"
 	"familyshare/internal/handler"
 	"familyshare/internal/storage"

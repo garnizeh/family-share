@@ -100,7 +100,7 @@ func TestSetViewerHashCookie(t *testing.T) {
 	viewerHash := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
 	w := httptest.NewRecorder()
-	SetViewerHashCookie(w, token, viewerHash, nil)
+	SetViewerHashCookie(w, token, viewerHash, nil, CookieOptions{Secure: false, SameSite: http.SameSiteLaxMode})
 
 	cookies := w.Result().Cookies()
 	if len(cookies) != 1 {
@@ -134,7 +134,7 @@ func TestSetViewerHashCookie_WithExpiration(t *testing.T) {
 	expiresAt := time.Now().Add(2 * time.Hour)
 
 	w := httptest.NewRecorder()
-	SetViewerHashCookie(w, token, viewerHash, &expiresAt)
+	SetViewerHashCookie(w, token, viewerHash, &expiresAt, CookieOptions{Secure: false, SameSite: http.SameSiteLaxMode})
 
 	cookies := w.Result().Cookies()
 	if len(cookies) != 1 {
@@ -222,5 +222,29 @@ func TestSetViewerHashSecret_EmptyOptional(t *testing.T) {
 func TestSetViewerHashSecret_EmptyRequired(t *testing.T) {
 	if err := SetViewerHashSecret("", true); err == nil {
 		t.Fatal("expected error for empty required secret")
+	}
+}
+
+func TestSetViewerHashCookie_WithOptions(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
+	token := "test-token-abc123xyz"
+	viewerHash := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+
+	w := httptest.NewRecorder()
+	SetViewerHashCookie(w, token, viewerHash, nil, CookieOptions{Secure: true, SameSite: http.SameSiteStrictMode})
+
+	cookies := w.Result().Cookies()
+	if len(cookies) != 1 {
+		t.Fatalf("Expected 1 cookie, got %d", len(cookies))
+	}
+
+	cookie := cookies[0]
+	if !cookie.Secure {
+		t.Error("Expected Secure cookie")
+	}
+	if cookie.SameSite != http.SameSiteStrictMode {
+		t.Errorf("Expected SameSite=Strict, got %v", cookie.SameSite)
 	}
 }

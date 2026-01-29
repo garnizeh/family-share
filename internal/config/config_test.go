@@ -19,6 +19,8 @@ func TestLoad_WithEnvVars(t *testing.T) {
 	os.Setenv("APP_ENV", "production")
 	os.Setenv("VIEWER_HASH_SECRET", "test-secret")
 	os.Setenv("VIEWER_HASH_SECRET_REQUIRED", "true")
+	os.Setenv("FORCE_HTTPS", "true")
+	os.Setenv("COOKIE_SAMESITE", "Strict")
 	defer func() {
 		os.Unsetenv("SERVER_ADDR")
 		os.Unsetenv("DATABASE_PATH")
@@ -30,6 +32,8 @@ func TestLoad_WithEnvVars(t *testing.T) {
 		os.Unsetenv("APP_ENV")
 		os.Unsetenv("VIEWER_HASH_SECRET")
 		os.Unsetenv("VIEWER_HASH_SECRET_REQUIRED")
+		os.Unsetenv("FORCE_HTTPS")
+		os.Unsetenv("COOKIE_SAMESITE")
 	}()
 
 	cfg := config.Load()
@@ -64,6 +68,12 @@ func TestLoad_WithEnvVars(t *testing.T) {
 	if !cfg.RequireViewerHashSecret {
 		t.Errorf("expected VIEWER_HASH_SECRET_REQUIRED true, got false")
 	}
+	if !cfg.ForceHTTPS {
+		t.Errorf("expected FORCE_HTTPS true, got false")
+	}
+	if cfg.CookieSameSite != "Strict" {
+		t.Errorf("expected COOKIE_SAMESITE Strict, got %s", cfg.CookieSameSite)
+	}
 }
 
 func TestLoad_Defaults(t *testing.T) {
@@ -78,6 +88,8 @@ func TestLoad_Defaults(t *testing.T) {
 	os.Unsetenv("APP_ENV")
 	os.Unsetenv("VIEWER_HASH_SECRET")
 	os.Unsetenv("VIEWER_HASH_SECRET_REQUIRED")
+	os.Unsetenv("FORCE_HTTPS")
+	os.Unsetenv("COOKIE_SAMESITE")
 
 	cfg := config.Load()
 
@@ -110,6 +122,12 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if cfg.RequireViewerHashSecret {
 		t.Errorf("expected default VIEWER_HASH_SECRET_REQUIRED false, got true")
+	}
+	if cfg.ForceHTTPS {
+		t.Errorf("expected default FORCE_HTTPS false, got true")
+	}
+	if cfg.CookieSameSite != "Lax" {
+		t.Errorf("expected default COOKIE_SAMESITE Lax, got %s", cfg.CookieSameSite)
 	}
 }
 

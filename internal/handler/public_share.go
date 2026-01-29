@@ -81,7 +81,7 @@ func (h *Handler) ViewShareLink(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// 7. Set viewer hash cookie for future visits
-	security.SetViewerHashCookie(w, token, viewerHash, &link.ExpiresAt.Time)
+	security.SetViewerHashCookie(w, token, viewerHash, &link.ExpiresAt.Time, h.cookieOptions(r))
 
 	// 8. Render content based on target type
 	switch link.TargetType {
