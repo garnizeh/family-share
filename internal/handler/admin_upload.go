@@ -130,7 +130,7 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Process through pipeline
-		photo, err := pipeline.ProcessAndSave(context.WithValue(ctx, "admin-upload", true), h.db, albumID, tmp, n)
+		photo, err := pipeline.ProcessAndSave(context.WithValue(ctx, "admin-upload", true), h.db, albumID, tmp, n, h.storage.BaseDir)
 
 		// Cleanup temp file always
 		tmp.Close()

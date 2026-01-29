@@ -21,6 +21,7 @@ func ProcessAndSave(
 	albumID int64,
 	upload io.ReadSeeker,
 	maxBytes int64,
+	baseDir string,
 ) (*sqlc.Photo, error) {
 	// Validate and decode
 	img, _, err := ValidateAndDecode(upload, maxBytes)
@@ -46,7 +47,7 @@ func ProcessAndSave(
 
 	sizeBytes := buf.Len()
 	// Save encoded data and create DB record
-	_, _, photo, err := SaveProcessedImage(ctx, db, albumID, bytes.NewReader(buf.Bytes()), img.Bounds().Dx(), img.Bounds().Dy(), sizeBytes, "webp")
+	_, _, photo, err := SaveProcessedImage(ctx, db, baseDir, albumID, bytes.NewReader(buf.Bytes()), img.Bounds().Dx(), img.Bounds().Dy(), sizeBytes, "webp")
 	if err != nil {
 		return nil, fmt.Errorf("save processed image: %w", err)
 	}

@@ -51,7 +51,7 @@ func TestProcessAndSave_Success(t *testing.T) {
 	}
 
 	r := makeJPEG(t, 200, 100)
-	photo, err := ProcessAndSave(ctx, d, alb.ID, r, 10<<20)
+	photo, err := ProcessAndSave(ctx, d, alb.ID, r, 10<<20, tmp)
 	if err != nil {
 		t.Fatalf("process and save failed: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestProcessAndSave_WriteFailure_RollsBack(t *testing.T) {
 	}
 
 	r := makeJPEG(t, 200, 100)
-	_, err = ProcessAndSave(ctx, d, alb.ID, r, 10<<20)
+	_, err = ProcessAndSave(ctx, d, alb.ID, r, 10<<20, blocked)
 	if err == nil {
 		t.Fatalf("expected error when storage path is blocked")
 	}

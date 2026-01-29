@@ -13,7 +13,6 @@ import (
 
 func TestSaveProcessedImage_Success(t *testing.T) {
 	tmp := t.TempDir()
-	os.Setenv("STORAGE_PATH", tmp)
 
 	dbPath := filepath.Join(tmp, "save_test.db")
 	d, err := db.InitDB(dbPath)
@@ -30,7 +29,7 @@ func TestSaveProcessedImage_Success(t *testing.T) {
 	}
 
 	data := []byte("webpdata")
-	photoID, path, photo, err := SaveProcessedImage(ctx, d, alb.ID, bytes.NewReader(data), 100, 50, len(data), "webp")
+	photoID, path, photo, err := SaveProcessedImage(ctx, d, tmp, alb.ID, bytes.NewReader(data), 100, 50, len(data), "webp")
 	if err != nil {
 		t.Fatalf("SaveProcessedImage failed: %v", err)
 	}
@@ -69,7 +68,6 @@ func TestSaveProcessedImage_WriteFailure_RollsBack(t *testing.T) {
 	if err := os.WriteFile(blocked, []byte("x"), 0o600); err != nil {
 		t.Fatalf("write blocker: %v", err)
 	}
-	os.Setenv("STORAGE_PATH", blocked)
 
 	dbPath := filepath.Join(tmp, "save_fail.db")
 	d, err := db.InitDB(dbPath)
@@ -86,7 +84,7 @@ func TestSaveProcessedImage_WriteFailure_RollsBack(t *testing.T) {
 	}
 
 	data := []byte("webpdata")
-	_, _, _, err = SaveProcessedImage(ctx, d, alb.ID, bytes.NewReader(data), 100, 50, len(data), "webp")
+	_, _, _, err = SaveProcessedImage(ctx, d, blocked, alb.ID, bytes.NewReader(data), 100, 50, len(data), "webp")
 	if err == nil {
 		t.Fatalf("expected error when storage path is blocked")
 	}

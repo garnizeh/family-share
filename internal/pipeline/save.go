@@ -20,6 +20,7 @@ import (
 func SaveProcessedImage(
 	ctx context.Context,
 	db *sql.DB,
+	baseDir string,
 	albumID int64,
 	encodedData io.Reader,
 	width, height, sizeBytes int,
@@ -55,8 +56,8 @@ func SaveProcessedImage(
 		return 0, "", nil, fmt.Errorf("create photo record: %w", err)
 	}
 
-	// determine storage path using env-configured base dir
-	base := os.Getenv("STORAGE_PATH")
+	// determine storage path using configured base dir
+	base := baseDir
 	if base == "" {
 		base = "./data"
 	}
