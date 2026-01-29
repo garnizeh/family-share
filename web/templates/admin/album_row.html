@@ -1,7 +1,7 @@
 {{define "album_row.html"}}
 <div class="card card-album" id="album-{{.ID}}">
     {{if .CoverPhotoID.Valid}}
-    <img src="/data/photos/{{.CoverPhotoID.Int64}}.webp" alt="{{.Title}}" class="card-cover" loading="lazy">
+    <img src="/admin/photos/{{.CoverPhotoID.Int64}}.webp" alt="{{.Title}}" class="card-cover" loading="lazy">
     {{else}}
     <div class="card-cover-placeholder">📷</div>
     {{end}}

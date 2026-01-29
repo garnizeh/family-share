@@ -43,9 +43,10 @@
             <div id="photo-grid" class="grid-photos">
                 {{range $index, $photo := .Photos}}
                 <div class="card card-photo" data-photo-id="{{$photo.ID}}"
-                    data-photo-url="/data/photos/{{$photo.ID}}.webp" data-photo-name="{{$photo.Filename}}">
-                    <img src="/data/photos/{{$photo.ID}}.webp" alt="{{$photo.Filename}}" class="card-photo-preview"
-                        loading="lazy" @click="openLightbox({{$index}})" style="cursor: pointer;">
+                    data-photo-url="/s/{{$.Token}}/photos/{{$photo.ID}}.webp" data-photo-name="{{$photo.Filename}}">
+                    <img src="/s/{{$.Token}}/photos/{{$photo.ID}}.webp" alt="{{$photo.Filename}}"
+                        class="card-photo-preview" loading="lazy" @click="openLightbox({{$index}})"
+                        style="cursor: pointer;">
                     <div class="card-photo-info">
                         <p class="text-xs text-muted mb-0">{{$photo.Filename}}</p>
                     </div>

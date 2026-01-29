@@ -1,9 +1,9 @@
 {{define "photo_grid_partial.html"}}
 {{range $index, $photo := .Photos}}
-<div class="card card-photo" data-photo-id="{{$photo.ID}}" data-photo-url="/data/photos/{{$photo.ID}}.webp"
+<div class="card card-photo" data-photo-id="{{$photo.ID}}" data-photo-url="/s/{{$.Token}}/photos/{{$photo.ID}}.webp"
     data-photo-name="{{$photo.Filename}}">
-    <img src="/data/photos/{{$photo.ID}}.webp" alt="{{$photo.Filename}}" class="card-photo-preview" loading="lazy"
-        @click="updatePhotosFromDOM(); openLightbox(photos.findIndex(p => p.id === '{{$photo.ID}}'))"
+    <img src="/s/{{$.Token}}/photos/{{$photo.ID}}.webp" alt="{{$photo.Filename}}" class="card-photo-preview"
+        loading="lazy" @click="updatePhotosFromDOM(); openLightbox(photos.findIndex(p => p.id === '{{$photo.ID}}'))"
         style="cursor: pointer;">
     <div class="card-photo-info">
         <p class="text-xs text-muted mb-0">{{$photo.Filename}}</p>

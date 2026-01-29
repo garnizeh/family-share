@@ -25,9 +25,6 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 		r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(h.embedFS))))
 	}
 
-	// Serve photo files from data/photos directory
-	r.Get("/data/photos/{id}.webp", h.ServePhoto)
-
 	// Public routes
 	r.Get("/", h.HomePage)
 
@@ -41,6 +38,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 		})
 		r.Use(shareLimiter.Middleware())
 		r.Get("/{token}", h.ViewShareLink)
+		r.Get("/{token}/photos/{id}.webp", h.ServeSharedPhoto)
 	})
 
 	// Admin routes - apply stricter rate limiting
@@ -81,6 +79,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 			r.Post("/albums/{id}/photos", h.AdminUploadPhotos)
 
 			// Photo management
+			r.Get("/photos/{id}.webp", h.ServePhoto)
 			r.Delete("/photos/{id}", h.DeletePhoto)
 			r.Post("/photos/{id}/set-cover", h.SetCoverPhoto)
 
