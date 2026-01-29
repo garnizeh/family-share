@@ -47,6 +47,38 @@ func TestHealthCheck_OK(t *testing.T) {
 	}
 }
 
+func TestHealthCheck_DBDown(t *testing.T) {
+	dbConn, err := db.InitDB(":memory:")
+	if err != nil {
+		t.Fatalf("InitDB: %v", err)
+	}
+
+	store := storage.New("./testdata")
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
+
+	// Close DB to simulate outage
+	dbConn.Close()
+
+	req := httptest.NewRequest("GET", "/health", nil)
+	w := httptest.NewRecorder()
+
+	h.HealthCheck(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d", w.Code)
+	}
+
+	var body struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("decode json: %v", err)
+	}
+	if body.Status != "unhealthy" {
+		t.Fatalf("expected unhealthy status, got %s", body.Status)
+	}
+}
+
 func TestStaticFileServing_and_Routes(t *testing.T) {
 	// Determine where the embedded static files live (try common locations)
 	var subfs fs.FS
