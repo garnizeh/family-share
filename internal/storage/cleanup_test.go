@@ -11,7 +11,7 @@ import (
 
 func TestCleanOrphanedTempFiles(t *testing.T) {
 	// create temp dir
-	tmp := os.TempDir()
+	tmp := t.TempDir()
 	f1 := filepath.Join(tmp, "upload-old.tmp")
 	f2 := filepath.Join(tmp, "upload-new.tmp")
 
@@ -30,7 +30,7 @@ func TestCleanOrphanedTempFiles(t *testing.T) {
 	}
 
 	// run janitor with cutoff 15 minutes -> should remove f1 only
-	if err := storage.CleanOrphanedTempFiles(15 * time.Minute); err != nil {
+	if err := storage.CleanOrphanedTempFiles(15*time.Minute, tmp); err != nil {
 		t.Fatalf("clean: %v", err)
 	}
 

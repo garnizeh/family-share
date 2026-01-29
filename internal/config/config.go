@@ -12,6 +12,7 @@ type Config struct {
 	ServerAddr     string
 	DatabasePath   string
 	DataDir        string
+	TempUploadDir  string
 	Environment    string
 	ForceHTTPS     bool
 	CookieSameSite string
@@ -40,6 +41,7 @@ func Load() *Config {
 		ServerAddr:              getEnv("SERVER_ADDR", ":8080"),
 		DatabasePath:            getEnv("DATABASE_PATH", "./data/familyshare.db"),
 		DataDir:                 getEnv("DATA_DIR", "./data"),
+		TempUploadDir:           getEnv("TEMP_UPLOAD_DIR", ""),
 		Environment:             env,
 		ForceHTTPS:              getEnvBool("FORCE_HTTPS", env == "production"),
 		CookieSameSite:          getEnv("COOKIE_SAMESITE", "Lax"),

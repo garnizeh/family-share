@@ -12,6 +12,7 @@ func TestLoad_WithEnvVars(t *testing.T) {
 	os.Setenv("SERVER_ADDR", ":9999")
 	os.Setenv("DATABASE_PATH", "./tmp/db.sqlite")
 	os.Setenv("DATA_DIR", "./tmp/data")
+	os.Setenv("TEMP_UPLOAD_DIR", "./tmp/uploads")
 	os.Setenv("RATE_LIMIT_SHARE", "120")
 	os.Setenv("RATE_LIMIT_ADMIN", "20")
 	os.Setenv("ADMIN_PASSWORD_HASH", "$2a$10$test_hash")
@@ -25,6 +26,7 @@ func TestLoad_WithEnvVars(t *testing.T) {
 		os.Unsetenv("SERVER_ADDR")
 		os.Unsetenv("DATABASE_PATH")
 		os.Unsetenv("DATA_DIR")
+		os.Unsetenv("TEMP_UPLOAD_DIR")
 		os.Unsetenv("RATE_LIMIT_SHARE")
 		os.Unsetenv("RATE_LIMIT_ADMIN")
 		os.Unsetenv("ADMIN_PASSWORD_HASH")
@@ -46,6 +48,9 @@ func TestLoad_WithEnvVars(t *testing.T) {
 	}
 	if cfg.DataDir != "./tmp/data" {
 		t.Errorf("expected DATA_DIR ./tmp/data, got %s", cfg.DataDir)
+	}
+	if cfg.TempUploadDir != "./tmp/uploads" {
+		t.Errorf("expected TEMP_UPLOAD_DIR ./tmp/uploads, got %s", cfg.TempUploadDir)
 	}
 	if cfg.RateLimitShare != 120 {
 		t.Errorf("expected RATE_LIMIT_SHARE 120, got %d", cfg.RateLimitShare)
@@ -81,6 +86,7 @@ func TestLoad_Defaults(t *testing.T) {
 	os.Unsetenv("SERVER_ADDR")
 	os.Unsetenv("DATABASE_PATH")
 	os.Unsetenv("DATA_DIR")
+	os.Unsetenv("TEMP_UPLOAD_DIR")
 	os.Unsetenv("RATE_LIMIT_SHARE")
 	os.Unsetenv("RATE_LIMIT_ADMIN")
 	os.Unsetenv("ADMIN_PASSWORD_HASH")
@@ -101,6 +107,9 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if cfg.DataDir != "./data" {
 		t.Errorf("expected default DATA_DIR ./data, got %s", cfg.DataDir)
+	}
+	if cfg.TempUploadDir != "" {
+		t.Errorf("expected default TEMP_UPLOAD_DIR empty, got %s", cfg.TempUploadDir)
 	}
 	if cfg.RateLimitShare != 60 {
 		t.Errorf("expected default RATE_LIMIT_SHARE 60, got %d", cfg.RateLimitShare)

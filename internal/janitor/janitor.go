@@ -17,6 +17,7 @@ type Janitor struct {
 	db          *sql.DB
 	queries     *sqlc.Queries
 	storagePath string
+	tempUploadDir string
 	interval    time.Duration
 	stopChan    chan struct{}
 	doneChan    chan struct{}
@@ -26,6 +27,7 @@ type Janitor struct {
 type Config struct {
 	DB          *sql.DB
 	StoragePath string
+	TempUploadDir string
 	Interval    time.Duration
 }
 
@@ -39,6 +41,7 @@ func New(cfg Config) *Janitor {
 		db:          cfg.DB,
 		queries:     sqlc.New(cfg.DB),
 		storagePath: cfg.StoragePath,
+		tempUploadDir: cfg.TempUploadDir,
 		interval:    cfg.Interval,
 		stopChan:    make(chan struct{}),
 		doneChan:    make(chan struct{}),
@@ -193,7 +196,7 @@ func (j *Janitor) cleanupEmptyDirs() {
 
 // cleanupTempFiles removes orphaned temporary upload files older than 15 minutes
 func (j *Janitor) cleanupTempFiles() {
-	if err := storage.CleanOrphanedTempFiles(15 * time.Minute); err != nil {
+	if err := storage.CleanOrphanedTempFiles(15*time.Minute, j.tempUploadDir); err != nil {
 		log.Printf("Janitor: failed to cleanup temp files: %v", err)
 	}
 }
