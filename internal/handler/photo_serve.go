@@ -42,6 +42,8 @@ func (h *Handler) ServePhoto(w http.ResponseWriter, r *http.Request) {
 	}
 	photoPath := storage.PhotoPathAt(h.storage.BaseDir, photo.AlbumID, photoID, ext, createdAt)
 
+	// Set cache header for admin-served photos (private)
+	w.Header().Set("Cache-Control", "private, max-age=3600")
 	// Serve the file
 	http.ServeFile(w, r, photoPath)
 }
@@ -125,5 +127,7 @@ func (h *Handler) ServeSharedPhoto(w http.ResponseWriter, r *http.Request) {
 	}
 	photoPath := storage.PhotoPathAt(h.storage.BaseDir, photo.AlbumID, photo.ID, ext, createdAt)
 
+	// Shared photos are safe to cache publicly for a short duration
+	w.Header().Set("Cache-Control", "public, max-age=86400")
 	http.ServeFile(w, r, photoPath)
 }
