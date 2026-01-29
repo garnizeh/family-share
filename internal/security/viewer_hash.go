@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"familyshare/internal/requestip"
 )
 
 var (
@@ -135,16 +137,5 @@ func ParseSameSite(value string) http.SameSite {
 
 // getClientIP extracts the client IP from the request
 func getClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header (if behind proxy)
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return xff
-	}
-
-	// Check X-Real-IP header
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return xri
-	}
-
-	// Fall back to RemoteAddr
-	return r.RemoteAddr
+	return requestip.ClientIP(r, getTrustedProxyCIDRs())
 }

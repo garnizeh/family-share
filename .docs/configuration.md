@@ -12,6 +12,7 @@ FamilyShare reads configuration from environment variables (optionally via `.env
 | `ADMIN_PASSWORD_HASH` | empty | bcrypt hash for admin login. |
 | `RATE_LIMIT_SHARE` | `60` | Requests/min for public share links. |
 | `RATE_LIMIT_ADMIN` | `10` | Requests/min for admin endpoints. |
+| `TRUSTED_PROXY_CIDRS` | empty | Comma-separated CIDR ranges for trusted proxies (honor forwarded headers only when the request originates from these ranges). |
 | `JANITOR_INTERVAL` | `6h` | Cleanup interval for expired links/files. |
 | `DOMAIN` | none | Caddy site domain (Compose deployment). |
 | `ACME_EMAIL` | none | Email for ACME/TLS registration in Caddy. |

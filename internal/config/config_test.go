@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"net/netip"
 	"os"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ func TestLoad_WithEnvVars(t *testing.T) {
 	os.Setenv("VIEWER_HASH_SECRET_REQUIRED", "true")
 	os.Setenv("FORCE_HTTPS", "true")
 	os.Setenv("COOKIE_SAMESITE", "Strict")
+	os.Setenv("TRUSTED_PROXY_CIDRS", "10.0.0.0/8, 192.168.0.0/16")
 	defer func() {
 		os.Unsetenv("SERVER_ADDR")
 		os.Unsetenv("DATABASE_PATH")
@@ -36,6 +38,7 @@ func TestLoad_WithEnvVars(t *testing.T) {
 		os.Unsetenv("VIEWER_HASH_SECRET_REQUIRED")
 		os.Unsetenv("FORCE_HTTPS")
 		os.Unsetenv("COOKIE_SAMESITE")
+		os.Unsetenv("TRUSTED_PROXY_CIDRS")
 	}()
 
 	cfg := config.Load()
@@ -79,6 +82,12 @@ func TestLoad_WithEnvVars(t *testing.T) {
 	if cfg.CookieSameSite != "Strict" {
 		t.Errorf("expected COOKIE_SAMESITE Strict, got %s", cfg.CookieSameSite)
 	}
+	if len(cfg.TrustedProxyCIDRs) != 2 {
+		t.Fatalf("expected 2 trusted proxy CIDRs, got %d", len(cfg.TrustedProxyCIDRs))
+	}
+	if cfg.TrustedProxyCIDRs[0] != netip.MustParsePrefix("10.0.0.0/8") {
+		t.Errorf("expected first trusted CIDR 10.0.0.0/8, got %s", cfg.TrustedProxyCIDRs[0])
+	}
 }
 
 func TestLoad_Defaults(t *testing.T) {
@@ -96,6 +105,7 @@ func TestLoad_Defaults(t *testing.T) {
 	os.Unsetenv("VIEWER_HASH_SECRET_REQUIRED")
 	os.Unsetenv("FORCE_HTTPS")
 	os.Unsetenv("COOKIE_SAMESITE")
+	os.Unsetenv("TRUSTED_PROXY_CIDRS")
 
 	cfg := config.Load()
 
@@ -137,6 +147,9 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if cfg.CookieSameSite != "Lax" {
 		t.Errorf("expected default COOKIE_SAMESITE Lax, got %s", cfg.CookieSameSite)
+	}
+	if len(cfg.TrustedProxyCIDRs) != 0 {
+		t.Errorf("expected default TRUSTED_PROXY_CIDRS empty, got %d", len(cfg.TrustedProxyCIDRs))
 	}
 }
 

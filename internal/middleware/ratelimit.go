@@ -3,11 +3,12 @@ package middleware
 import (
 	"fmt"
 	"log"
-	"net"
 	"net/http"
-	"strings"
+	"net/netip"
 	"sync"
 	"time"
+
+	"familyshare/internal/requestip"
 )
 
 // TemplateRenderer interface for rendering HTML templates
@@ -24,6 +25,7 @@ type RateLimiter struct {
 	lockoutDuration  time.Duration    // optional lockout after violations
 	maxViolations    int              // number of violations before lockout
 	templateRenderer TemplateRenderer // optional template renderer for nice error pages
+	trustedProxyCIDRs []netip.Prefix
 }
 
 // clientBucket tracks tokens and violations for a single client (IP)
@@ -42,6 +44,7 @@ type RateLimitConfig struct {
 	LockoutDuration   time.Duration
 	MaxViolations     int
 	TemplateRenderer  TemplateRenderer // optional template renderer
+	TrustedProxyCIDRs []netip.Prefix
 }
 
 // NewRateLimiter creates a new rate limiter with the given configuration
@@ -60,6 +63,7 @@ func NewRateLimiter(config RateLimitConfig) *RateLimiter {
 		lockoutDuration:  config.LockoutDuration,
 		maxViolations:    config.MaxViolations,
 		templateRenderer: config.TemplateRenderer,
+		trustedProxyCIDRs: config.TrustedProxyCIDRs,
 	}
 
 	// Start background cleanup goroutine
@@ -82,7 +86,7 @@ func RateLimit(requestsPerMinute int) func(http.Handler) http.Handler {
 func (rl *RateLimiter) Middleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			clientIP := getClientIP(r)
+			clientIP := getClientIP(r, rl.trustedProxyCIDRs)
 
 			allowed, remaining, resetTime := rl.Allow(clientIP)
 
@@ -227,27 +231,6 @@ func (rl *RateLimiter) cleanup() {
 
 // getClientIP extracts the client IP from the request
 // Handles X-Forwarded-For header for reverse proxy scenarios
-func getClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header (set by reverse proxies)
-	forwarded := r.Header.Get("X-Forwarded-For")
-	if forwarded != "" {
-		// X-Forwarded-For can contain multiple IPs, use the first one
-		ips := strings.Split(forwarded, ",")
-		if len(ips) > 0 {
-			return strings.TrimSpace(ips[0])
-		}
-	}
-
-	// Check X-Real-IP header
-	realIP := r.Header.Get("X-Real-IP")
-	if realIP != "" {
-		return realIP
-	}
-
-	// Fall back to RemoteAddr
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return ip
+func getClientIP(r *http.Request, trustedProxyCIDRs []netip.Prefix) string {
+	return requestip.ClientIP(r, trustedProxyCIDRs)
 }

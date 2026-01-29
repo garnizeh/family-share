@@ -3,6 +3,7 @@ package security
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"os"
 	"testing"
 	"time"
@@ -152,12 +153,13 @@ func TestGetClientIP_RemoteAddr(t *testing.T) {
 	if err := SetViewerHashSecret("test-secret", true); err != nil {
 		t.Fatalf("set secret: %v", err)
 	}
+	SetTrustedProxyCIDRs(nil)
 	req := httptest.NewRequest("GET", "/test", nil)
 	req.RemoteAddr = "192.168.1.100:12345"
 
 	ip := getClientIP(req)
-	if ip != "192.168.1.100:12345" {
-		t.Errorf("Expected IP '192.168.1.100:12345', got '%s'", ip)
+	if ip != "192.168.1.100" {
+		t.Errorf("Expected IP '192.168.1.100', got '%s'", ip)
 	}
 }
 
@@ -165,8 +167,9 @@ func TestGetClientIP_XForwardedFor(t *testing.T) {
 	if err := SetViewerHashSecret("test-secret", true); err != nil {
 		t.Fatalf("set secret: %v", err)
 	}
+	SetTrustedProxyCIDRs([]netip.Prefix{netip.MustParsePrefix("10.0.0.0/8")})
 	req := httptest.NewRequest("GET", "/test", nil)
-	req.RemoteAddr = "192.168.1.100:12345"
+	req.RemoteAddr = "10.0.0.1:12345"
 	req.Header.Set("X-Forwarded-For", "203.0.113.5")
 
 	ip := getClientIP(req)
@@ -179,13 +182,30 @@ func TestGetClientIP_XRealIP(t *testing.T) {
 	if err := SetViewerHashSecret("test-secret", true); err != nil {
 		t.Fatalf("set secret: %v", err)
 	}
+	SetTrustedProxyCIDRs([]netip.Prefix{netip.MustParsePrefix("10.0.0.0/8")})
 	req := httptest.NewRequest("GET", "/test", nil)
-	req.RemoteAddr = "192.168.1.100:12345"
+	req.RemoteAddr = "10.0.0.1:12345"
 	req.Header.Set("X-Real-IP", "203.0.113.10")
 
 	ip := getClientIP(req)
 	if ip != "203.0.113.10" {
 		t.Errorf("Expected IP '203.0.113.10', got '%s'", ip)
+	}
+}
+
+func TestGetClientIP_ForwardedIgnoredWhenUntrusted(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
+	SetTrustedProxyCIDRs(nil)
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.RemoteAddr = "10.0.0.1:12345"
+	req.Header.Set("X-Forwarded-For", "203.0.113.5")
+	req.Header.Set("X-Real-IP", "203.0.113.10")
+
+	ip := getClientIP(req)
+	if ip != "10.0.0.1" {
+		t.Errorf("Expected IP '10.0.0.1', got '%s'", ip)
 	}
 }
 
