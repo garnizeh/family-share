@@ -35,6 +35,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 			LockoutDuration:   5 * time.Minute,
 			MaxViolations:     10,
 			TemplateRenderer:  h,
+				TrustedProxyCIDRs: h.config.TrustedProxyCIDRs,
 		})
 		r.Use(shareLimiter.Middleware())
 		r.Get("/{token}", h.ViewShareLink)
@@ -49,6 +50,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 			LockoutDuration:   5 * time.Minute,
 			MaxViolations:     10,
 			TemplateRenderer:  h,
+				TrustedProxyCIDRs: h.config.TrustedProxyCIDRs,
 		})
 		r.Use(adminLimiter.Middleware())
 

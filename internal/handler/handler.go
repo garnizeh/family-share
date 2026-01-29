@@ -31,6 +31,7 @@ type Handler struct {
 
 func New(database *sql.DB, store *storage.Storage, embedFS embed.FS, cfg *config.Config) *Handler {
 	if cfg != nil {
+		security.SetTrustedProxyCIDRs(cfg.TrustedProxyCIDRs)
 		if err := security.SetViewerHashSecret(cfg.ViewerHashSecret, cfg.RequireViewerHashSecret); err != nil {
 			log.Fatalf("viewer hash secret configuration error: %v", err)
 		}

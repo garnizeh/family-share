@@ -1,11 +1,15 @@
 package config
 
 import (
+	"log"
+	"net/netip"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
+
+	"familyshare/internal/requestip"
 )
 
 type Config struct {
@@ -16,6 +20,8 @@ type Config struct {
 	Environment    string
 	ForceHTTPS     bool
 	CookieSameSite string
+
+	TrustedProxyCIDRs []netip.Prefix
 
 	// Rate limiting configuration
 	RateLimitShare int // requests per minute for share links
@@ -36,6 +42,10 @@ func Load() *Config {
 
 	env := getEnv("APP_ENV", "development")
 	requireViewerHashSecret := getEnvBool("VIEWER_HASH_SECRET_REQUIRED", env == "production")
+	trustedProxyCIDRs, err := requestip.ParseTrustedProxyCIDRs(getEnv("TRUSTED_PROXY_CIDRS", ""))
+	if err != nil {
+		log.Printf("invalid TRUSTED_PROXY_CIDRS: %v", err)
+	}
 
 	return &Config{
 		ServerAddr:              getEnv("SERVER_ADDR", ":8080"),
@@ -45,6 +55,7 @@ func Load() *Config {
 		Environment:             env,
 		ForceHTTPS:              getEnvBool("FORCE_HTTPS", env == "production"),
 		CookieSameSite:          getEnv("COOKIE_SAMESITE", "Lax"),
+		TrustedProxyCIDRs:       trustedProxyCIDRs,
 		RateLimitShare:          getEnvInt("RATE_LIMIT_SHARE", 60),
 		RateLimitAdmin:          getEnvInt("RATE_LIMIT_ADMIN", 10),
 		AdminPasswordHash:       getEnv("ADMIN_PASSWORD_HASH", ""),

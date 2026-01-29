@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"testing"
 	"time"
 )
@@ -188,6 +189,7 @@ func TestRateLimit_HandlesXForwardedFor(t *testing.T) {
 	limiter := NewRateLimiter(RateLimitConfig{
 		RequestsPerMinute: 2,
 		CleanupInterval:   time.Minute,
+		TrustedProxyCIDRs: []netip.Prefix{netip.MustParsePrefix("10.0.0.0/8")},
 	})
 
 	handler := limiter.Middleware()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -313,6 +315,7 @@ func TestGetClientIP(t *testing.T) {
 		xForwardedFor string
 		xRealIP       string
 		expectedIP    string
+		trustedCIDRs  []netip.Prefix
 	}{
 		{
 			name:       "Direct connection",
@@ -320,29 +323,40 @@ func TestGetClientIP(t *testing.T) {
 			expectedIP: "192.168.1.100",
 		},
 		{
-			name:          "X-Forwarded-For single IP",
+			name:          "X-Forwarded-For single IP (trusted proxy)",
 			remoteAddr:    "10.0.0.1:12345",
 			xForwardedFor: "203.0.113.1",
 			expectedIP:    "203.0.113.1",
+			trustedCIDRs:  []netip.Prefix{netip.MustParsePrefix("10.0.0.0/8")},
 		},
 		{
-			name:          "X-Forwarded-For multiple IPs",
+			name:          "X-Forwarded-For multiple IPs (trusted proxy)",
 			remoteAddr:    "10.0.0.1:12345",
 			xForwardedFor: "203.0.113.1, 198.51.100.1, 192.0.2.1",
 			expectedIP:    "203.0.113.1",
+			trustedCIDRs:  []netip.Prefix{netip.MustParsePrefix("10.0.0.0/8")},
 		},
 		{
-			name:       "X-Real-IP header",
-			remoteAddr: "10.0.0.1:12345",
-			xRealIP:    "203.0.113.2",
-			expectedIP: "203.0.113.2",
+			name:         "X-Real-IP header (trusted proxy)",
+			remoteAddr:   "10.0.0.1:12345",
+			xRealIP:      "203.0.113.2",
+			expectedIP:   "203.0.113.2",
+			trustedCIDRs: []netip.Prefix{netip.MustParsePrefix("10.0.0.0/8")},
 		},
 		{
-			name:          "X-Forwarded-For takes precedence over X-Real-IP",
+			name:          "X-Forwarded-For takes precedence over X-Real-IP (trusted proxy)",
 			remoteAddr:    "10.0.0.1:12345",
 			xForwardedFor: "203.0.113.1",
 			xRealIP:       "203.0.113.2",
 			expectedIP:    "203.0.113.1",
+			trustedCIDRs:  []netip.Prefix{netip.MustParsePrefix("10.0.0.0/8")},
+		},
+		{
+			name:          "Untrusted proxy ignores forwarded headers",
+			remoteAddr:    "10.0.0.1:12345",
+			xForwardedFor: "203.0.113.1",
+			xRealIP:       "203.0.113.2",
+			expectedIP:    "10.0.0.1",
 		},
 	}
 
@@ -357,7 +371,7 @@ func TestGetClientIP(t *testing.T) {
 				req.Header.Set("X-Real-IP", tt.xRealIP)
 			}
 
-			ip := getClientIP(req)
+			ip := getClientIP(req, tt.trustedCIDRs)
 			if ip != tt.expectedIP {
 				t.Errorf("Expected IP %s, got %s", tt.expectedIP, ip)
 			}
