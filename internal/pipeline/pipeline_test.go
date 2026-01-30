@@ -45,7 +45,7 @@ func TestProcessAndSave_Success(t *testing.T) {
 	}
 	defer d.Close()
 
-	ctx := context.Background()
+	ctx := WithSkipUploadEvent(context.Background())
 	q := sqlc.New(d)
 	alb, err := q.CreateAlbum(ctx, sqlc.CreateAlbumParams{Title: "test"})
 	if err != nil {
@@ -88,7 +88,7 @@ func TestProcessAndSave_WriteFailure_RollsBack(t *testing.T) {
 	}
 	defer d.Close()
 
-	ctx := context.Background()
+	ctx := WithSkipUploadEvent(context.Background())
 	q := sqlc.New(d)
 	alb, err := q.CreateAlbum(ctx, sqlc.CreateAlbumParams{Title: "test"})
 	if err != nil {
@@ -122,7 +122,7 @@ func TestProcessAndSaveWithFormat_AVIF(t *testing.T) {
 	}
 	defer d.Close()
 
-	ctx := context.Background()
+	ctx := WithSkipUploadEvent(context.Background())
 	q := sqlc.New(d)
 	alb, err := q.CreateAlbum(ctx, sqlc.CreateAlbumParams{Title: "test avif"})
 	if err != nil {

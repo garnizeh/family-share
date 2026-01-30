@@ -27,7 +27,7 @@ func TestProcessAndSave_JPEG(t *testing.T) {
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	defer storageCleanup()
 
-	ctx := context.Background()
+	ctx := pipeline.WithSkipUploadEvent(context.Background())
 
 	// Create test album
 	album := testutil.CreateTestAlbum(t, q, "Test Album", "Description")
@@ -104,7 +104,7 @@ func TestProcessAndSave_PNG(t *testing.T) {
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	defer storageCleanup()
 
-	ctx := context.Background()
+	ctx := pipeline.WithSkipUploadEvent(context.Background())
 
 	album := testutil.CreateTestAlbum(t, q, "PNG Test Album", "")
 
@@ -142,7 +142,7 @@ func TestProcessAndSave_LargeImage_Resized(t *testing.T) {
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	defer storageCleanup()
 
-	ctx := context.Background()
+	ctx := pipeline.WithSkipUploadEvent(context.Background())
 
 	album := testutil.CreateTestAlbum(t, q, "Large Image Test", "")
 
@@ -183,7 +183,7 @@ func TestProcessAndSave_FileTooLarge(t *testing.T) {
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	defer storageCleanup()
 
-	ctx := context.Background()
+	ctx := pipeline.WithSkipUploadEvent(context.Background())
 
 	album := testutil.CreateTestAlbum(t, q, "Size Limit Test", "")
 
@@ -208,7 +208,7 @@ func TestProcessAndSave_Rollback_OnFileWriteFailure(t *testing.T) {
 
 	// Use invalid storage directory to force write failure
 	invalidDir := "/invalid/path/that/does/not/exist"
-	ctx := context.Background()
+	ctx := pipeline.WithSkipUploadEvent(context.Background())
 
 	album := testutil.CreateTestAlbum(t, q, "Rollback Test", "")
 
@@ -246,7 +246,7 @@ func TestProcessAndSave_CreatedAtTimestamp(t *testing.T) {
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	defer storageCleanup()
 
-	ctx := context.Background()
+	ctx := pipeline.WithSkipUploadEvent(context.Background())
 
 	album := testutil.CreateTestAlbum(t, q, "Timestamp Test", "")
 
@@ -290,7 +290,7 @@ func TestProcessAndSave_DirectoryStructure(t *testing.T) {
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	defer storageCleanup()
 
-	ctx := context.Background()
+	ctx := pipeline.WithSkipUploadEvent(context.Background())
 
 	album := testutil.CreateTestAlbum(t, q, "Directory Test", "")
 

@@ -82,14 +82,29 @@ func SaveProcessedImage(
 	}
 
 	// Log upload event (fire and forget, don't fail upload if logging fails)
-	go func() {
-		logCtx := context.Background()
-		if err := logUploadEvent(logCtx, db, albumID, p.ID); err != nil {
-			log.Printf("failed to log upload event: %v", err)
-		}
-	}()
+	if ctx == nil || ctx.Value(skipUploadEventKey) != true {
+		go func() {
+			logCtx := context.Background()
+			if err := logUploadEvent(logCtx, db, albumID, p.ID); err != nil {
+				log.Printf("failed to log upload event: %v", err)
+			}
+		}()
+	}
 
 	return p.ID, path, &p, nil
+}
+
+type contextKey string
+
+const skipUploadEventKey contextKey = "skip-upload-event"
+
+// WithSkipUploadEvent disables async upload event logging for this context.
+// Useful for tests that close the DB connection immediately after saving.
+func WithSkipUploadEvent(ctx context.Context) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, skipUploadEventKey, true)
 }
 
 // logUploadEvent logs an upload activity event
