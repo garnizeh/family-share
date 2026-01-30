@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -60,7 +61,7 @@ func ValidateAndDecode(r io.Reader, maxBytes int64) (image.Image, string, error)
 		return nil, ct, ErrNotAnImage
 	}
 	if decodeErr != nil {
-		return nil, ct, decodeErr
+		return nil, ct, fmt.Errorf("%w: %v", ErrDecodeFailed, decodeErr)
 	}
 
 	// validate dimensions

@@ -2,8 +2,10 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -18,7 +20,28 @@ import (
 type UploadResult struct {
 	Filename string
 	PhotoID  int64
-	Error    error
+	Error    string
+}
+
+var errUploadTooLarge = errors.New("upload exceeds per-file limit")
+
+func friendlyUploadError(err error, maxPerFile int64) string {
+	if err == nil {
+		return ""
+	}
+
+	switch {
+	case errors.Is(err, errUploadTooLarge), errors.Is(err, pipeline.ErrTooLarge):
+		return fmt.Sprintf("File is too large. Max %dMB.", maxPerFile>>20)
+	case errors.Is(err, pipeline.ErrNotAnImage):
+		return "Unsupported file type. Please upload a JPG, PNG, WebP, GIF, or AVIF."
+	case errors.Is(err, pipeline.ErrInvalidDimensions):
+		return fmt.Sprintf("Image dimensions are invalid. Max %dx%d pixels.", pipeline.MaxDimension, pipeline.MaxDimension)
+	case errors.Is(err, pipeline.ErrDecodeFailed):
+		return "We couldn't read that image. It may be corrupted."
+	default:
+		return "Upload failed. Please try again."
+	}
 }
 
 // AdminUploadPhotos handles multipart photo uploads for an album.
@@ -79,7 +102,8 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 		// Create temp file
 		tmp, err := os.CreateTemp(tmpBaseDir, "upload-*.tmp")
 		if err != nil {
-			result.Error = fmt.Errorf("temp file creation failed")
+			log.Printf("upload temp file creation failed for %s: %v", result.Filename, err)
+			result.Error = friendlyUploadError(err, maxPerFile)
 			h.RenderTemplate(w, "upload_row.html", result)
 			if flusher != nil {
 				flusher.Flush()
@@ -93,9 +117,11 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 		// Copy with size limit
 		n, err := io.Copy(tmp, io.LimitReader(part, maxPerFile+1))
 		if err != nil {
+			copyErr := fmt.Errorf("read failed: %w", err)
+			log.Printf("upload read failed for %s: %v", result.Filename, copyErr)
 			tmp.Close()
 			os.Remove(tmp.Name())
-			result.Error = fmt.Errorf("read failed: %w", err)
+			result.Error = friendlyUploadError(copyErr, maxPerFile)
 			h.RenderTemplate(w, "upload_row.html", result)
 			if flusher != nil {
 				flusher.Flush()
@@ -105,9 +131,10 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if n > maxPerFile {
+			log.Printf("upload too large for %s: %d bytes", result.Filename, n)
 			tmp.Close()
 			os.Remove(tmp.Name())
-			result.Error = fmt.Errorf("file too large")
+			result.Error = friendlyUploadError(errUploadTooLarge, maxPerFile)
 			h.RenderTemplate(w, "upload_row.html", result)
 			if flusher != nil {
 				flusher.Flush()
@@ -118,9 +145,11 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 
 		// Seek to beginning for pipeline
 		if _, err := tmp.Seek(0, 0); err != nil {
+			seekErr := fmt.Errorf("seek failed: %w", err)
+			log.Printf("upload seek failed for %s: %v", result.Filename, seekErr)
 			tmp.Close()
 			os.Remove(tmp.Name())
-			result.Error = fmt.Errorf("seek failed")
+			result.Error = friendlyUploadError(seekErr, maxPerFile)
 			h.RenderTemplate(w, "upload_row.html", result)
 			if flusher != nil {
 				flusher.Flush()
@@ -142,7 +171,8 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 		part.Close()
 
 		if err != nil {
-			result.Error = err
+			log.Printf("upload pipeline failed for %s: %v", result.Filename, err)
+			result.Error = friendlyUploadError(err, maxPerFile)
 		} else {
 			result.PhotoID = photo.ID
 		}

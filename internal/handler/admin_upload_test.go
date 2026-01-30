@@ -151,8 +151,8 @@ func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
 	if w3.Result().StatusCode != 200 {
 		t.Fatalf("invalid upload status: %d", w3.Result().StatusCode)
 	}
-	if !strings.Contains(w3.Body.String(), "Error:") {
-		t.Fatalf("expected failure partial, got: %s", w3.Body.String())
+	if !strings.Contains(w3.Body.String(), "Unsupported file type") {
+		t.Fatalf("expected friendly error message, got: %s", w3.Body.String())
 	}
 }
 
@@ -205,8 +205,11 @@ func TestAdminUpload_SizeLimitRejection(t *testing.T) {
 	}
 
 	responseBody := w.Body.String()
-	if !strings.Contains(responseBody, "file too large") {
-		t.Fatalf("expected 'file too large' error, got: %s", responseBody)
+	if !strings.Contains(responseBody, "File is too large") {
+		t.Fatalf("expected friendly size error, got: %s", responseBody)
+	}
+	if !strings.Contains(responseBody, "25MB") {
+		t.Fatalf("expected size limit hint, got: %s", responseBody)
 	}
 
 	// Verify no photo was created in DB

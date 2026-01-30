@@ -879,6 +879,12 @@ p {
     color: var(--color-gray-600);
 }
 
+.upload-row-meta-error {
+    font-size: var(--font-size-xs);
+    color: var(--color-error);
+    font-weight: var(--font-weight-medium);
+}
+
 .upload-row-status {
     flex-shrink: 0;
 }

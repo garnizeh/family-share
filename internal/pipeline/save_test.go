@@ -21,7 +21,7 @@ func TestSaveProcessedImage_Success(t *testing.T) {
 	}
 	defer d.Close()
 
-	ctx := context.Background()
+	ctx := WithSkipUploadEvent(context.Background())
 	q := sqlc.New(d)
 	alb, err := q.CreateAlbum(ctx, sqlc.CreateAlbumParams{Title: "save-album"})
 	if err != nil {
@@ -76,7 +76,7 @@ func TestSaveProcessedImage_WriteFailure_RollsBack(t *testing.T) {
 	}
 	defer d.Close()
 
-	ctx := context.Background()
+	ctx := WithSkipUploadEvent(context.Background())
 	q := sqlc.New(d)
 	alb, err := q.CreateAlbum(ctx, sqlc.CreateAlbumParams{Title: "save-album"})
 	if err != nil {

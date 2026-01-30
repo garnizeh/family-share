@@ -12,7 +12,7 @@
         <div class="upload-row-filename">{{ .Filename }}</div>
         <div class="upload-row-meta">
             {{if .Error}}
-            Error: {{ .Error }}
+            <span class="upload-row-meta-error">{{ .Error }}</span>
             {{else}}
             Successfully uploaded (ID: {{ .PhotoID }})
             {{end}}
