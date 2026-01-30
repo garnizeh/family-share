@@ -30,6 +30,7 @@ type Handler struct {
 }
 
 func New(database *sql.DB, store *storage.Storage, embedFS embed.FS, cfg *config.Config) *Handler {
+	debug := cfg != nil && cfg.Debug
 	if cfg != nil {
 		security.SetTrustedProxyCIDRs(cfg.TrustedProxyCIDRs)
 		if err := security.SetViewerHashSecret(cfg.ViewerHashSecret, cfg.RequireViewerHashSecret); err != nil {
@@ -59,10 +60,14 @@ func New(database *sql.DB, store *storage.Storage, embedFS embed.FS, cfg *config
 	})
 
 	if len(files) == 0 {
-		log.Printf("no embedded templates found (walk returned 0 files)")
+		if debug {
+			log.Printf("no embedded templates found (walk returned 0 files)")
+		}
 		tmpl = template.New("base")
 	} else {
-		log.Printf("template files to parse: %v", files)
+		if debug {
+			log.Printf("template files to parse: %v", files)
+		}
 		tmpl, err = template.ParseFS(embedFS, files...)
 		if err != nil {
 			log.Printf("template parse error: %v", err)
@@ -78,7 +83,9 @@ func New(database *sql.DB, store *storage.Storage, embedFS embed.FS, cfg *config
 			names = append(names, t.Name())
 		}
 	}
-	log.Printf("loaded templates: %v", names)
+	if debug {
+		log.Printf("loaded templates: %v", names)
+	}
 
 	return &Handler{
 		db:        database,
