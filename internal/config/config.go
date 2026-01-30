@@ -21,6 +21,7 @@ type Config struct {
 	ForceHTTPS     bool
 	CookieSameSite string
 	ImageFormat    string
+	Debug          bool
 
 	TrustedProxyCIDRs []netip.Prefix
 
@@ -57,6 +58,7 @@ func Load() *Config {
 		ForceHTTPS:              getEnvBool("FORCE_HTTPS", env == "production"),
 		CookieSameSite:          getEnv("COOKIE_SAMESITE", "Lax"),
 		ImageFormat:             getEnv("IMAGE_FORMAT", "webp"),
+		Debug:                   getEnvBool("DEBUG", false),
 		TrustedProxyCIDRs:       trustedProxyCIDRs,
 		RateLimitShare:          getEnvInt("RATE_LIMIT_SHARE", 60),
 		RateLimitAdmin:          getEnvInt("RATE_LIMIT_ADMIN", 10),

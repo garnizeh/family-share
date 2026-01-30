@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -74,11 +75,11 @@ func (h *Handler) ViewShareLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Log share view event (fire and forget)
-	go func() {
-		if err := h.metrics.LogShareView(r.Context(), link.ID); err != nil {
-			log.Printf("failed to log share view event: %v", err)
-		}
-	}()
+	go func(shareID int64) {
+		logCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		_ = h.metrics.LogShareView(logCtx, shareID)
+	}(link.ID)
 
 	// 7. Set viewer hash cookie for future visits
 	security.SetViewerHashCookie(w, token, viewerHash, &link.ExpiresAt.Time, h.cookieOptions(r))

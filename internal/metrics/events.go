@@ -3,7 +3,9 @@ package metrics
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log"
+	"strings"
 	"time"
 
 	"familyshare/internal/db/sqlc"
@@ -53,10 +55,28 @@ func (l *Logger) LogEvent(ctx context.Context, eventType EventType, albumID, pho
 	})
 
 	if err != nil {
+		if IsIgnorableError(err) {
+			return err
+		}
 		log.Printf("metrics: failed to log event %s: %v", eventType, err)
 	}
 
 	return err
+}
+
+// IsIgnorableError returns true for best-effort logging errors we want to suppress.
+func IsIgnorableError(err error) bool {
+	if err == nil {
+		return true
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	if strings.Contains(msg, "sqlite_busy") || strings.Contains(msg, "database is locked") {
+		return true
+	}
+	return false
 }
 
 // LogUpload logs a photo upload event
