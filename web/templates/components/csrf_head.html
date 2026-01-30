@@ -1,0 +1,46 @@
+{{define "csrf_head.html"}}
+<meta name="csrf-token" content="">
+<script>
+    (function () {
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) {
+                return parts.pop().split(';').shift();
+            }
+            return '';
+        }
+
+        function applyToken() {
+            const token = getCookie('csrf_token');
+            if (!token) {
+                return;
+            }
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta) {
+                meta.setAttribute('content', token);
+            }
+            window.csrfToken = token;
+
+            document.querySelectorAll('form').forEach((form) => {
+                if (form.querySelector('input[name="csrf_token"]')) {
+                    return;
+                }
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'csrf_token';
+                input.value = token;
+                form.appendChild(input);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', applyToken);
+        document.body.addEventListener('htmx:afterSwap', applyToken);
+        document.body.addEventListener('htmx:configRequest', function (evt) {
+            if (window.csrfToken) {
+                evt.detail.headers['X-CSRF-Token'] = window.csrfToken;
+            }
+        });
+    })();
+</script>
+{{end}}

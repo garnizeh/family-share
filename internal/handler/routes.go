@@ -38,7 +38,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 			LockoutDuration:   5 * time.Minute,
 			MaxViolations:     10,
 			TemplateRenderer:  h,
-				TrustedProxyCIDRs: h.config.TrustedProxyCIDRs,
+			TrustedProxyCIDRs: h.config.TrustedProxyCIDRs,
 		})
 		r.Use(shareLimiter.Middleware())
 		r.Get("/{token}", h.ViewShareLink)
@@ -47,13 +47,16 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 
 	// Admin routes - apply stricter rate limiting
 	r.Route("/admin", func(r chi.Router) {
+		csrf := middleware.NewCSRF(h.config.CSRFSecret)
+		r.Use(csrf.Middleware())
+
 		// Apply rate limiting before auth to prevent brute-force login attempts
 		adminLimiter := middleware.NewRateLimiter(middleware.RateLimitConfig{
 			RequestsPerMinute: h.config.RateLimitAdmin,
 			LockoutDuration:   5 * time.Minute,
 			MaxViolations:     10,
 			TemplateRenderer:  h,
-				TrustedProxyCIDRs: h.config.TrustedProxyCIDRs,
+			TrustedProxyCIDRs: h.config.TrustedProxyCIDRs,
 		})
 		r.Use(adminLimiter.Middleware())
 
