@@ -221,6 +221,37 @@ func TestRateLimit_HandlesXForwardedFor(t *testing.T) {
 	}
 }
 
+func TestRateLimit_IgnoresForwardedForWhenUntrusted(t *testing.T) {
+	limiter := NewRateLimiter(RateLimitConfig{
+		RequestsPerMinute: 1,
+		CleanupInterval:   time.Minute,
+	})
+
+	handler := limiter.Middleware()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// First request uses RemoteAddr since proxy is untrusted
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.RemoteAddr = "10.0.0.1:12345"
+	req.Header.Set("X-Forwarded-For", "203.0.113.1")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+
+	// Second request with same RemoteAddr should be blocked (limit 1)
+	req = httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.RemoteAddr = "10.0.0.1:12345"
+	req.Header.Set("X-Forwarded-For", "203.0.113.2")
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429, got %d", w.Code)
+	}
+}
+
 func TestRateLimit_LockoutAfterViolations(t *testing.T) {
 	limiter := NewRateLimiter(RateLimitConfig{
 		RequestsPerMinute: 2,

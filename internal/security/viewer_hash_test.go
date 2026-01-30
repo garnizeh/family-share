@@ -292,3 +292,28 @@ func TestSetViewerHashCookie_ShortToken(t *testing.T) {
 		t.Errorf("Expected cookie value %s, got %s", viewerHash, cookie.Value)
 	}
 }
+
+func TestGetViewerHash_ShortToken_NoPanic(t *testing.T) {
+	if err := SetViewerHashSecret("test-secret", true); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
+	token := "abc"
+
+	req := httptest.NewRequest("GET", "/s/"+token, nil)
+	req.RemoteAddr = "192.168.1.100:12345"
+	req.Header.Set("User-Agent", "TestAgent/1.0")
+
+	hash := GetViewerHash(req, token)
+	if len(hash) != 64 {
+		t.Fatalf("expected hash length 64, got %d", len(hash))
+	}
+
+	// Ensure short token cookie name is used when present
+	existing := "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+	req = httptest.NewRequest("GET", "/s/"+token, nil)
+	req.AddCookie(&http.Cookie{Name: "_vh_short", Value: existing})
+	hash = GetViewerHash(req, token)
+	if hash != existing {
+		t.Fatalf("expected hash from short cookie, got %s", hash)
+	}
+}
