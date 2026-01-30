@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Share Links - FamilyShare Admin</title>
     <link rel="stylesheet" href="/static/styles.css">
+    {{template "csrf_head.html" .}}
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -193,7 +194,7 @@
                 <div
                     style="padding: var(--space-6); border-top: var(--border-width) solid var(--color-gray-200); display: flex; gap: var(--space-3); justify-content: flex-end;">
                     <button @click="confirmRevokeOpen = false" class="btn btn-secondary">Cancel</button>
-                    <button @click="fetch('/admin/shares/' + revokeShareId, { method: 'DELETE' }).then(() => { 
+                    <button @click="fetch('/admin/shares/' + revokeShareId, { method: 'DELETE', headers: { 'X-CSRF-Token': window.csrfToken || '' } }).then(() => { 
                             const row = document.querySelector('#share-' + revokeShareId);
                             if (row) row.remove();
                             confirmRevokeOpen = false; 

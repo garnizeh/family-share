@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Album.Title}} - FamilyShare Admin</title>
     <link rel="stylesheet" href="/static/styles.css">
+    {{template "csrf_head.html" .}}
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
@@ -176,7 +177,7 @@
                     <button @click="confirmDeletePhotoOpen = false" class="btn btn-secondary">
                         Cancel
                     </button>
-                    <button @click="fetch('/admin/photos/' + deletePhotoId, { method: 'DELETE' }).then(() => { 
+                    <button @click="fetch('/admin/photos/' + deletePhotoId, { method: 'DELETE', headers: { 'X-CSRF-Token': window.csrfToken || '' } }).then(() => { 
                             const photoCard = document.querySelector('#photo-' + deletePhotoId);
                             photoCard.remove(); 
                             const grid = document.querySelector('#photos-grid');

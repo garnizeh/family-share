@@ -22,6 +22,7 @@ type Config struct {
 	CookieSameSite string
 	ImageFormat    string
 	Debug          bool
+	CSRFSecret     string
 
 	TrustedProxyCIDRs []netip.Prefix
 
@@ -59,6 +60,7 @@ func Load() *Config {
 		CookieSameSite:          getEnv("COOKIE_SAMESITE", "Lax"),
 		ImageFormat:             getEnv("IMAGE_FORMAT", "webp"),
 		Debug:                   getEnvBool("DEBUG", false),
+		CSRFSecret:              getEnv("CSRF_SECRET", ""),
 		TrustedProxyCIDRs:       trustedProxyCIDRs,
 		RateLimitShare:          getEnvInt("RATE_LIMIT_SHARE", 60),
 		RateLimitAdmin:          getEnvInt("RATE_LIMIT_ADMIN", 10),
