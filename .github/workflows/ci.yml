@@ -67,3 +67,5 @@ jobs:
           file: Dockerfile
           push: false
           tags: familyshare:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
