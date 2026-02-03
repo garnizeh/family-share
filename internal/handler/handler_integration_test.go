@@ -1,12 +1,10 @@
 package handler_test
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -421,28 +419,4 @@ func TestUploadAndPhotoAccess_Integration(t *testing.T) {
 			}
 		}
 	})
-}
-
-// createMultipartRequest creates a multipart form request for file upload testing
-func createMultipartRequest(t *testing.T, url string, fieldName string, fileName string, fileContent io.Reader) *http.Request {
-	t.Helper()
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	part, err := writer.CreateFormFile(fieldName, fileName)
-	if err != nil {
-		t.Fatalf("failed to create form file: %v", err)
-	}
-
-	if _, err := io.Copy(part, fileContent); err != nil {
-		t.Fatalf("failed to copy file content: %v", err)
-	}
-
-	writer.Close()
-
-	req := httptest.NewRequest("POST", url, body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	return req
 }

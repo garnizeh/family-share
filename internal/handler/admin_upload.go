@@ -16,6 +16,11 @@ import (
 	"familyshare/internal/pipeline"
 )
 
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
+const adminUploadKey contextKey = "admin-upload"
+
 // UploadResult is passed to the HTMX partial for each uploaded file.
 type UploadResult struct {
 	Filename string
@@ -104,7 +109,9 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("upload temp file creation failed for %s: %v", result.Filename, err)
 			result.Error = friendlyUploadError(err, maxPerFile)
-			h.RenderTemplate(w, "upload_row.html", result)
+			if err := h.RenderTemplate(w, "upload_row.html", result); err != nil {
+				log.Printf("failed to render error template: %v", err)
+			}
 			if flusher != nil {
 				flusher.Flush()
 			}
@@ -122,7 +129,9 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 			tmp.Close()
 			os.Remove(tmp.Name())
 			result.Error = friendlyUploadError(copyErr, maxPerFile)
-			h.RenderTemplate(w, "upload_row.html", result)
+			if err := h.RenderTemplate(w, "upload_row.html", result); err != nil {
+				log.Printf("failed to render error template: %v", err)
+			}
 			if flusher != nil {
 				flusher.Flush()
 			}
@@ -135,7 +144,9 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 			tmp.Close()
 			os.Remove(tmp.Name())
 			result.Error = friendlyUploadError(errUploadTooLarge, maxPerFile)
-			h.RenderTemplate(w, "upload_row.html", result)
+			if err := h.RenderTemplate(w, "upload_row.html", result); err != nil {
+				log.Printf("failed to render error template: %v", err)
+			}
 			if flusher != nil {
 				flusher.Flush()
 			}
@@ -150,7 +161,9 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 			tmp.Close()
 			os.Remove(tmp.Name())
 			result.Error = friendlyUploadError(seekErr, maxPerFile)
-			h.RenderTemplate(w, "upload_row.html", result)
+			if err := h.RenderTemplate(w, "upload_row.html", result); err != nil {
+				log.Printf("failed to render error template: %v", err)
+			}
 			if flusher != nil {
 				flusher.Flush()
 			}
@@ -163,7 +176,7 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 		if h.config != nil && h.config.ImageFormat != "" {
 			format = h.config.ImageFormat
 		}
-		photo, err := pipeline.ProcessAndSaveWithFormat(context.WithValue(ctx, "admin-upload", true), h.db, albumID, tmp, n, h.storage.BaseDir, format)
+		photo, err := pipeline.ProcessAndSaveWithFormat(context.WithValue(ctx, adminUploadKey, true), h.db, albumID, tmp, n, h.storage.BaseDir, format)
 
 		// Cleanup temp file always
 		tmp.Close()

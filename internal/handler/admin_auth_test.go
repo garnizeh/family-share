@@ -34,7 +34,7 @@ func TestLoginPage(t *testing.T) {
 }
 
 func TestLogin_Success(t *testing.T) {
-	h := setupTestHandler(t)
+	setupTestHandler(t)
 
 	// Create a password hash for testing
 	testPassword := "testpassword123"
@@ -56,7 +56,7 @@ func TestLogin_Success(t *testing.T) {
 	dbConn, _ := db.InitDB(":memory:")
 	t.Cleanup(func() { dbConn.Close() })
 	store := storage.New("./testdata")
-	h = handler.New(dbConn, store, web.EmbedFS, cfg)
+	h := handler.New(dbConn, store, web.EmbedFS, cfg)
 
 	// Create login request
 	form := url.Values{}

@@ -100,7 +100,7 @@ func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
 	// photos are stored under storage.PhotoPath(base, albumID, photoID, ext)
 	// find any file under storageDir recursively
 	var found bool
-	filepath.Walk(storageDir, func(p string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(storageDir, func(p string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() {
 			found = true
 		}
@@ -186,7 +186,7 @@ func TestAdminUpload_SizeLimitRejection(t *testing.T) {
 	// Use a repeating pattern to save memory during test
 	chunk := bytes.Repeat([]byte("x"), 1024*1024) // 1MB chunk
 	for range 26 {
-		fw.Write(chunk)
+		_, _ = fw.Write(chunk)
 	}
 	mw.Close()
 

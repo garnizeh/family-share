@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"database/sql"
+	"log"
 	"net/http"
 	"time"
 
@@ -37,7 +38,9 @@ func RequireAuth(db *sql.DB) func(http.Handler) http.Handler {
 			// Check if session is expired
 			if time.Now().UTC().After(session.ExpiresAt) {
 				// Clean up expired session
-				q.DeleteSession(r.Context(), cookie.Value)
+				if err := q.DeleteSession(r.Context(), cookie.Value); err != nil {
+					log.Printf("failed to delete expired session: %v", err)
+				}
 				http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 				return
 			}

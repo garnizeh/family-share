@@ -58,11 +58,11 @@ func TestTempFileCreatedDuringUpload(t *testing.T) {
 			return
 		}
 		// write initial chunk
-		fw.Write(bytes.Repeat([]byte("a"), 1024))
+		_, _ = fw.Write(bytes.Repeat([]byte("a"), 1024))
 		// flush by sleeping to allow handler to create temp file
 		time.Sleep(200 * time.Millisecond)
 		// finish
-		fw.Write(bytes.Repeat([]byte("b"), 1024*2))
+		_, _ = fw.Write(bytes.Repeat([]byte("b"), 1024*2))
 		mw.Close()
 	}()
 

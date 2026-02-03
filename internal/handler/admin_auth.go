@@ -139,7 +139,9 @@ func (h *Handler) isValidSession(r *http.Request) bool {
 	// Check if session is expired
 	if time.Now().UTC().After(session.ExpiresAt) {
 		// Clean up expired session
-		q.DeleteSession(r.Context(), cookie.Value)
+		if err := q.DeleteSession(r.Context(), cookie.Value); err != nil {
+			log.Printf("failed to delete expired session: %v", err)
+		}
 		return false
 	}
 
