@@ -1,8 +1,8 @@
 {
-    email {$ACME_EMAIL}
+    email {env.ACME_EMAIL}
 }
 
-{$DOMAIN} {
+{env.DOMAIN} {
     reverse_proxy app:8080
     encode gzip
 
