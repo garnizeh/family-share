@@ -17,7 +17,7 @@ func (h *Handler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	if err := h.db.PingContext(ctx); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(HealthResponse{
+		_ = json.NewEncoder(w).Encode(HealthResponse{
 			Status:    "unhealthy",
 			Timestamp: time.Now().UTC(),
 		})
@@ -25,7 +25,7 @@ func (h *Handler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(HealthResponse{
+	_ = json.NewEncoder(w).Encode(HealthResponse{
 		Status:    "healthy",
 		Timestamp: time.Now().UTC(),
 	})

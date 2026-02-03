@@ -175,7 +175,7 @@ func (j *Janitor) cleanupEmptyDirs() {
 	photosDir := filepath.Join(j.storagePath, "photos")
 
 	// Walk the directory tree from bottom to top
-	filepath.Walk(photosDir, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(photosDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil // skip on error
 		}

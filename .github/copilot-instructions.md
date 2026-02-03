@@ -17,10 +17,11 @@ You are acting as an expert Go and UX Developer. This project is a lightweight, 
 
 ## Core Tech Stack
 - **Backend:** Go (Golang) using `net/http` or `chi` router.
-- **Database:** SQLite (embedded). Use `sqlc`. No heavy ORMs like GORM. No CGO.
+- **Database:** SQLite (embedded). Use `sqlc`. No heavy ORMs like GORM.
 - **Frontend:** Go `html/template` (Server-Side Rendering).
 - **Interactivity:** HTMX for AJAX/Dynamic updates and Alpine.js for client-side state (modals, lightboxes).
 - **Styling:** TailwindCSS (Utility-first).
+- **Note:** CGO is required for WebP encoding (`github.com/chai2010/webp`).
 
 ## Critical Constraints & Patterns
 

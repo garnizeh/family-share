@@ -89,11 +89,11 @@ func ApplyMigrations(db *sql.DB, migrationsFS embed.FS) error {
 			return fmt.Errorf("begin tx: %w", err)
 		}
 		if _, err := tx.Exec(string(b)); err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			return fmt.Errorf("exec migration %s: %w", it.name, err)
 		}
 		if _, err := tx.Exec(`INSERT INTO schema_migrations(version) VALUES(?)`, it.ver); err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			return fmt.Errorf("record migration %s: %w", it.name, err)
 		}
 		if err := tx.Commit(); err != nil {

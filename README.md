@@ -53,8 +53,29 @@ go build -o familyshare ./cmd/app
 Admin UI: `http://localhost:8080/admin/login`
 
 ## Installation
-- Build from source (see Quick Start)
-- VPS deployment (Docker Compose + Caddy): see `.docs/deployment/docker-compose.md`
+
+### Local Development
+See Quick Start section above.
+
+### VPS Deployment
+
+**Quick Deploy:**
+```bash
+# On your VPS
+git clone https://github.com/YOUR_USERNAME/family-share.git
+cd family-share
+cp .env.example .env
+nano .env  # Configure your settings
+./scripts/deploy.sh
+```
+
+**Detailed Guide:**
+See [VPS Deployment Guide](.docs/deployment/vps-deployment.md) for complete instructions including:
+- VPS preparation
+- Domain configuration
+- SSL setup with Caddy
+- Backup strategies
+- Troubleshooting
 
 ## Configuration
 See `.docs/configuration.md` for all environment variables and defaults.

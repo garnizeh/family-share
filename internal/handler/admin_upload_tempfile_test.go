@@ -53,7 +53,7 @@ func TestTempFilesRemovedAfterSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create form file: %v", err)
 	}
-	fw.Write([]byte("notreallyjpeg"))
+	_, _ = fw.Write([]byte("notreallyjpeg"))
 	mw.Close()
 
 	req := httptest.NewRequest("POST", "/admin/albums/"+strconv.FormatInt(album.ID, 10)+"/photos", &body)
@@ -106,7 +106,7 @@ func TestTempFilesRemovedAfterFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create form file: %v", err)
 	}
-	io.WriteString(fw, "this is not an image")
+	_, _ = io.WriteString(fw, "this is not an image")
 	mw.Close()
 
 	req := httptest.NewRequest("POST", "/admin/albums/"+strconv.FormatInt(album.ID, 10)+"/photos", &body)

@@ -180,7 +180,7 @@ func LoadTestImage(t *testing.T, name string) io.Reader {
 	// Save for future use
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err == nil {
 		data, _ := io.ReadAll(img)
-		os.WriteFile(path, data, 0644)
+		_ = os.WriteFile(path, data, 0644)
 		return bytes.NewReader(data)
 	}
 

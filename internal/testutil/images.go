@@ -76,6 +76,6 @@ func savePNG(path string, img image.Image) error {
 func init() {
 	// Auto-generate sample images if they don't exist
 	if _, err := os.Stat("testdata/images/sample.jpg"); os.IsNotExist(err) {
-		GenerateSampleImages()
+		_ = GenerateSampleImages()
 	}
 }
