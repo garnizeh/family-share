@@ -1,16 +1,18 @@
 services:
   app:
-    image: ghcr.io/your-org/familyshare:latest
-    env_file: .env
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: familyshare:latest
+    env_file: ../.env
     environment:
       SERVER_ADDR: ":8080"
       DATA_DIR: "/app/data"
-      STORAGE_PATH: "/app/data"
       DATABASE_PATH: "/app/data/familyshare.db"
       TEMP_UPLOAD_DIR: "/app/tmp_uploads"
     volumes:
-      - ./data:/app/data
-      - ./tmp_uploads:/app/tmp_uploads
+      - ../data:/app/data
+      - ../tmp_uploads:/app/tmp_uploads
     restart: unless-stopped
     networks:
       - web
