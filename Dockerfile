@@ -1,8 +1,8 @@
 # Build stage
 FROM golang:1.25.6-alpine AS builder
 
-# Install build dependencies
-# RUN apk add --no-cache gcc musl-dev
+# Install build dependencies for CGO (required by webp library)
+RUN apk add --no-cache gcc musl-dev
 
 WORKDIR /app
 
@@ -15,9 +15,8 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
-# CGO_ENABLED=0 ensures a statically linked binary
-RUN CGO_ENABLED=0 GOOS=linux go build -o bin/familyshare ./cmd/app
+# Build the application with CGO enabled
+RUN CGO_ENABLED=1 GOOS=linux go build -o bin/familyshare ./cmd/app
 
 # Final stage
 FROM alpine:latest

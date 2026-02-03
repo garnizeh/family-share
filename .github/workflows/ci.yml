@@ -47,9 +47,9 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
-      - name: Build (CGO_ENABLED=0)
-        env:
-          CGO_ENABLED: 0
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc libc6-dev
+      - name: Build with CGO
         run: go build -v -o bin/familyshare ./cmd/app
 
   docker:
