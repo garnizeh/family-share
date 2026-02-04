@@ -34,13 +34,21 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', applyToken);
-        document.body.addEventListener('htmx:afterSwap', applyToken);
-        document.body.addEventListener('htmx:configRequest', function (evt) {
-            if (window.csrfToken) {
-                evt.detail.headers['X-CSRF-Token'] = window.csrfToken;
-            }
-        });
+        function setupEventListeners() {
+            applyToken();
+            document.body.addEventListener('htmx:afterSwap', applyToken);
+            document.body.addEventListener('htmx:configRequest', function (evt) {
+                if (window.csrfToken) {
+                    evt.detail.headers['X-CSRF-Token'] = window.csrfToken;
+                }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupEventListeners);
+        } else {
+            setupEventListeners();
+        }
     })();
 </script>
 {{end}}
