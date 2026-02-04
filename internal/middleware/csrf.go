@@ -67,9 +67,14 @@ func (c *CSRF) Middleware() func(http.Handler) http.Handler {
 				return
 			}
 
+			// Check header first (required for multipart forms to avoid consuming body)
 			requestToken := r.Header.Get(c.headerName)
 			if requestToken == "" {
-				requestToken = r.FormValue(c.formField)
+				// Only check FormValue for non-multipart requests to avoid consuming body
+				contentType := r.Header.Get("Content-Type")
+				if !strings.HasPrefix(contentType, "multipart/form-data") {
+					requestToken = r.FormValue(c.formField)
+				}
 			}
 			if requestToken == "" {
 				http.Error(w, "CSRF token missing", http.StatusForbidden)
