@@ -32,16 +32,31 @@ print_error() {
     echo -e "${RED}✗ $1${NC}"
 }
 
+# Pull latest changes (if in git repo)
+# Done EARLY to ensure we validate the latest configuration requirements
+if [ -d "$PROJECT_ROOT/.git" ]; then
+    echo "📥 Pulling latest changes from git..."
+    current_dir=$(pwd)
+    cd "$PROJECT_ROOT"
+    git pull origin main || print_warning "Could not pull from git (continuing anyway)"
+    cd "$current_dir"
+    print_success "Git pull complete"
+fi
+
 # Check if .env exists
 if [ ! -f "$PROJECT_ROOT/.env" ]; then
     print_error ".env file not found!"
-    echo "Please copy .env.example to .env and configure it first:"
-    echo "  cp .env.example .env"
+    echo "Please copy .env.production.example to .env and configure it first:"
+    echo "  cp .env.production.example .env"
     echo "  nano .env"
     exit 1
 fi
 
-print_success ".env file found"
+# Load .env variables
+set -a
+source "$PROJECT_ROOT/.env"
+set +a
+print_success "Loaded configuration from .env"
 
 # Check if running in deploy directory
 cd "$PROJECT_ROOT/deploy"
@@ -64,24 +79,27 @@ if ! docker compose version &> /dev/null; then
 fi
 print_success "Docker Compose is installed"
 
-# Check if Caddyfile exists and has required env vars
+# Check if Caddyfile exists
 if [ ! -f "Caddyfile" ]; then
     print_error "Caddyfile not found in deploy directory"
     exit 1
 fi
 
-# Check for DOMAIN and ACME_EMAIL in Caddyfile or env
-if grep -q '{$DOMAIN}' Caddyfile; then
+# Check for DOMAIN and ACME_EMAIL in env
+# We check irrespective of Caddyfile content to ensure they are available
+if grep -q '{$DOMAIN}' Caddyfile || [ -n "$DOMAIN" ]; then
     if [ -z "$DOMAIN" ]; then
-        print_warning "DOMAIN environment variable not set"
-        read -p "Enter your domain (e.g., photos.yourdomain.com): " DOMAIN
-        export DOMAIN
+        print_error "DOMAIN environment variable not set in .env"
+        echo "Please add DOMAIN=yourdomain.com to your .env file."
+        exit 1
     fi
     
-    if [ -z "$ACME_EMAIL" ]; then
-        print_warning "ACME_EMAIL environment variable not set"
-        read -p "Enter your email for Let's Encrypt: " ACME_EMAIL
-        export ACME_EMAIL
+    if grep -q '{$ACME_EMAIL}' Caddyfile || [ -n "$ACME_EMAIL" ]; then
+        if [ -z "$ACME_EMAIL" ]; then
+            print_error "ACME_EMAIL environment variable not set in .env"
+            echo "Please add ACME_EMAIL=your-email@example.com to your .env file."
+            exit 1
+        fi
     fi
     
     print_success "Domain: $DOMAIN"
@@ -100,15 +118,6 @@ echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     print_warning "Deployment cancelled"
     exit 0
-fi
-
-# Pull latest changes (if in git repo and not building locally)
-if [ -d "$PROJECT_ROOT/.git" ]; then
-    echo ""
-    echo "📥 Pulling latest changes from git..."
-    cd "$PROJECT_ROOT"
-    git pull origin main || print_warning "Could not pull from git (continuing anyway)"
-    cd deploy
 fi
 
 # Backup database if it exists
@@ -151,6 +160,7 @@ echo "🏥 Running health check..."
 MAX_RETRIES=10
 RETRY_COUNT=0
 
+# Use localhost health check since we are on the server
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if docker compose exec -T app wget -q -O - http://localhost:8080/health > /dev/null 2>&1; then
         print_success "Health check passed!"
