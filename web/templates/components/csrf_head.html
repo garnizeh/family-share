@@ -36,8 +36,8 @@
 
         function setupEventListeners() {
             applyToken();
-            document.body.addEventListener('htmx:afterSwap', applyToken);
-            document.body.addEventListener('htmx:configRequest', function (evt) {
+            document.addEventListener('htmx:afterSwap', applyToken);
+            document.addEventListener('htmx:configRequest', function (evt) {
                 if (window.csrfToken) {
                     evt.detail.headers['X-CSRF-Token'] = window.csrfToken;
                 }
