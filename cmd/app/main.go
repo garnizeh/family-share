@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -23,6 +24,8 @@ import (
 func main() {
 	// Load config from environment
 	cfg := config.Load()
+
+	fmt.Println("config: %+v", cfg)
 
 	// Initialize database
 	database, err := db.InitDB(cfg.DatabasePath)
