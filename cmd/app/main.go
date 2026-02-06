@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -25,7 +24,7 @@ func main() {
 	// Load config from environment
 	cfg := config.Load()
 
-	fmt.Println("config: %+v", cfg)
+	log.Printf("config: %+v", cfg)
 
 	// Initialize database
 	database, err := db.InitDB(cfg.DatabasePath)
@@ -55,10 +54,10 @@ func main() {
 
 	// Initialize and start janitor for cleanup tasks
 	jan := janitor.New(janitor.Config{
-		DB:          database,
-		StoragePath: cfg.DataDir,
+		DB:            database,
+		StoragePath:   cfg.DataDir,
 		TempUploadDir: cfg.TempUploadDir,
-		Interval:    cfg.JanitorInterval,
+		Interval:      cfg.JanitorInterval,
 	})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
