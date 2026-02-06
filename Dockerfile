@@ -29,7 +29,11 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /app/bin/familyshare /app/familyshare
 
-# Create necessary directories
+# Copy entrypoint to ensure host-mounted dirs are prepared at container start
+COPY scripts/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Create necessary directories (image build-time)
 RUN mkdir -p /app/data /app/tmp_uploads
 
 # Set environment variables
@@ -42,5 +46,5 @@ ENV SERVER_ADDR=":8080" \
 # Expose port
 EXPOSE 8080
 
-# Run the binary
-CMD ["/app/familyshare"]
+# Entrypoint will prepare runtime dirs and exec the binary
+ENTRYPOINT ["/app/entrypoint.sh"]
