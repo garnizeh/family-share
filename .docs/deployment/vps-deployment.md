@@ -80,64 +80,42 @@ RATE_LIMIT_ADMIN=10
 # TRUSTED_PROXY=cloudflare
 ```
 
-## Step 4: Configure Caddy for Your Domain
+## Step 4: Configure domain and TLS via .env
+
+You do NOT need to edit `deploy/Caddyfile` for most deployments — the deploy script reads `DOMAIN` and `ACME_EMAIL` from your project `.env` and will validate they exist before bringing up Caddy. This keeps deployment reproducible and avoids manual edits to the checked-in Caddyfile.
+
+Open your project `.env` (created in Step 3) and set these two values:
 
 ```bash
-# Edit Caddyfile
-nano deploy/Caddyfile
-```
-
-The Caddyfile should already be configured, but verify it looks like this:
-
-```caddy
-{
-    email your-email@example.com
-}
-
-your-domain.com {
-    reverse_proxy app:8080
-    encode gzip
-
-    header {
-        Strict-Transport-Security "max-age=31536000;"
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "DENY"
-    }
-}
-```
-
-**Or set environment variables:**
-
-```bash
-# Create .env file in deploy directory
-cd deploy
-nano .env
-```
-
-Add:
-
-```bash
+# At project root .env
 DOMAIN=photos.yourdomain.com
 ACME_EMAIL=your-email@example.com
 ```
 
+Notes:
+- If you need custom Caddy configuration (advanced users), you can still edit `deploy/Caddyfile` directly — but this is optional. The default Caddyfile included with the project is suitable for almost all VPS deployments.
+- Ensure DNS for `DOMAIN` points to your VPS before running the deploy script so Caddy can provision certificates.
+
 ## Step 5: Build and Deploy
 
+Everything is now handled by the deployment script. From the project root run:
+
 ```bash
-# Navigate to deploy directory
-cd ~/apps/family-share/deploy
-
-# Build and start services
-docker compose up -d --build
-
-# Check logs
-docker compose logs -f
-
-# Verify services are running
-docker compose ps
+# Run the deploy script (default: production). The script performs git pull,
+# validates .env, builds the Docker image, starts services, runs health checks
+# and prunes old images.
+./scripts/deploy.sh [production|staging]
 ```
 
-Expected output:
+Notes:
+- The script expects a configured `.env` file at the project root (see Step 3).
+- It runs from `deploy/` internally and uses `docker compose` there, so you do
+   not need to run `docker compose` manually.
+- The script will prompt for confirmation before making changes and will
+   create a database backup if an existing database is found.
+
+Typical final output shows services running, for example:
+
 ```
 NAME                    IMAGE               STATUS
 deploy-app-1           familyshare:latest   Up
@@ -211,6 +189,13 @@ docker compose up -d --build
 
 # Clean old images
 docker image prune -f
+```
+
+Prefer using the deployment script which automates pull, build, backup and restart:
+
+```bash
+# From project root
+./scripts/deploy.sh [production|staging]
 ```
 
 ### Backup Database

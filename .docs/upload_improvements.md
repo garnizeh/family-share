@@ -5,38 +5,17 @@ This document outlines the diagnosis and proposed solutions for `SQLITE_BUSY` er
 ## 1. SQLite Busy Errors (`SQLITE_BUSY`)
 
 ### Diagnosis
-The logs show `create photo record: database is locked (5) (SQLITE_BUSY)`. This happens because the default SQLite mode allows only one writer at a time, and without a "busy timeout," any concurrent write attempt immediately fails if the lock is held.
+The logs showed `create photo record: database is locked (5) (SQLITE_BUSY)` in earlier runs. This happens because SQLite's default locking can cause write contention if long-running writes overlap with other writers.
 
-### Solution: Enable WAL Mode & Busy Timeout
-We need to configure SQLite to use **Write-Ahead Logging (WAL)**, which allows concurrent readers, and set a **busy timeout** so the application waits for the lock instead of failing immediately.
+### Resolution implemented in code
+The application now enables WAL mode and sets a busy timeout during DB initialization to reduce transient SQLITE_BUSY failures.
 
-**Recommended Changes in `internal/db/db.go`:**
+See `internal/db/db.go` for the implemented PRAGMA changes (WAL + busy_timeout).
 
-```go
-func InitDB(path string) (*sql.DB, error) {
-    db, err := sql.Open("sqlite", path)
-    // ...
-    
-    // Enable WAL mode (better concurrency)
-    if _, err := db.Exec(`PRAGMA journal_mode=WAL;`); err != nil {
-        db.Close()
-        return nil, fmt.Errorf("enable wal: %w", err)
-    }
-
-    // specific busy timeout (e.g., 5000ms = 5s)
-    if _, err := db.Exec(`PRAGMA busy_timeout = 5000;`); err != nil {
-        db.Close()
-        return nil, fmt.Errorf("set busy timeout: %w", err)
-    }
-
-    // ... existing foreign_keys logic ...
-}
-```
-
-## 2. Upload Timeouts & Synchronous Processing
+### 2. Upload Timeouts & Asynchronous Processing
 
 ### Diagnosis
-The current upload handler (`AdminUploadPhotos`) is fully **synchronous**:
+Previously the upload handler was fully synchronous (read -> process -> respond) which sometimes caused connection timeouts for slow or large uploads.
 1.  Read file part from request.
 2.  Save to temp disk.
 3.  **Process image (heavy CPU/IO operation).**
@@ -46,8 +25,8 @@ The current upload handler (`AdminUploadPhotos`) is fully **synchronous**:
 
 If a user uploads 5 photos, and each takes 20 seconds to process, the browser/connection waits 100 seconds to send all data, likely triggering the `i/o timeout` seen in the logs (`read failed: read tcp ... i/o timeout`).
 
-### Strategy: Asynchronous Processing Queue
-To fix this robustly, we must decouple the *upload* (receiving bytes) from the *processing* (resize/encode).
+### Strategy: Asynchronous Processing Queue (Implemented)
+The codebase now decouples ingestion from processing. `AdminUploadPhotos` saves incoming files to a temp directory and inserts jobs into a `processing_queue` table. A background worker processes jobs and updates status.
 
 #### Step 1: Client-Side Upload Limit
 To immediately mitigate memory/timeout pressure, limit the `input` to allow max 5 files, or use a JavaScript snippet to chunk uploads.
@@ -56,12 +35,10 @@ To immediately mitigate memory/timeout pressure, limit the `input` to allow max 
 
 #### Step 2: Implementation Plan (Async)
 
-1.  **Modify `admin_upload.go`:**
-    *   Loop through multipart files.
-    *   **Only** save them to `tmp_uploads/` and validation (is it an image?).
-    *   Do **not** call `pipeline.ProcessAndSaveWithFormat` immediately.
-    *   Instead, start a **Goroutine** for each file (or feed a worker channel) to process the file in the background.
-    *   Return a "Processing..." UI card immediately to the user.
+1.  **Current implementation:**
+    * `internal/handler/admin_upload.go` enqueues jobs after saving temp files.
+    * `internal/worker/worker.go` consumes the queue and runs the image pipeline.
+    * The user-facing UI shows a polling progress partial until processing completes.
 
 2.  **UI Updates (HTMX):**
     *   The "Processing..." card needs to poll for completion.
@@ -75,10 +52,7 @@ If fully async is too complex for now, we can optimize the existing loop to be s
 
 *Note: Phase B still delays the HTTP response, so the browser might timeout waiting for the *response* header. Async/Polling is preferred.*
 
-### Summary of Tasks
-1.  [ ] **DB:** Update `InitDB` with WAL & Busy Timeout.
-2.  [ ] **Handler:** Refactor `AdminUploadPhotos` to:
-    *   Read/Save to temp disk immediately (drain request).
-    *   Launch processing in background (goroutine).
-    *   Respond with a "pending" template that polls for completion.
-3.  [ ] **Frontend:** Add polling endpoint (`/admin/upload/status/{id}`) to check if the photo is ready.
+### Summary
+- WAL and busy timeout were applied to reduce SQLITE_BUSY errors.
+- Upload handler and processing queue were implemented to make uploads robust for low-resource servers.
+- For operational issues (timeouts), ensure your reverse proxy timeouts are aligned with server settings (see `.docs/deployment/reverse-proxy.md`).

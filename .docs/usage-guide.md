@@ -11,7 +11,12 @@ Open `/admin/login` and enter the admin password.
 ## Upload photos
 1. Open an album.
 2. Use the upload form (single or batch).
-3. Wait for each upload row to show **Success**.
+3. After submitting, the UI will display a progress view while files are processed in the background.
+
+Notes:
+- Uploads are enqueued and processed asynchronously by a background worker. The upload handler saves incoming files to a temporary directory and returns a progress UI immediately.
+- The progress UI polls the server and will update when processing completes. Wait for the progress indicator to reach 100% or click the provided "Refresh Album" button when the UI shows completion to see newly added photos.
+- Temporary upload files are removed by the background worker after processing (or after a failed validation).
 
 ## Create a share link
 1. Open the album or photo.

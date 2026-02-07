@@ -19,7 +19,8 @@ git clone https://github.com/YOUR_USERNAME/family-share.git
 cd family-share
 
 # Configure
-cp .env.production.example .env
+# Use the repository's example .env (most repos provide `.env.example`)
+cp .env.example .env
 nano .env  # Edit DOMAIN, ACME_EMAIL, and generate secrets
 
 # Generate admin password
