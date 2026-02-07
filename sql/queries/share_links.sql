@@ -1,6 +1,6 @@
 -- name: CreateShareLink :one
-INSERT INTO share_links (token, target_type, target_id, max_views, expires_at)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO share_links (token, target_type, target_id, max_views, expires_at, message)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetShareLinkByToken :one

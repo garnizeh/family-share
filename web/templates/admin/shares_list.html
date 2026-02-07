@@ -70,6 +70,12 @@
                                         style="margin: 0.25rem 0 0 0; font-size: 0.875rem; color: var(--color-gray-600);">
                                         Sharing {{.TargetType}}
                                     </p>
+                                    {{if .Message.Valid}}
+                                    <p
+                                        style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: var(--color-gray-700); font-style: italic;">
+                                        "{{.Message.String}}"
+                                    </p>
+                                    {{end}}
                                 </div>
                             </div>
 

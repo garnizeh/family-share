@@ -402,3 +402,54 @@ func TestListActiveShareLinks_ExcludesExpired(t *testing.T) {
 		t.Fatalf("expected active-token, got %s", activeShares[0].Token)
 	}
 }
+
+func TestCreateShareLink_WithMessage(t *testing.T) {
+	dbConn, err := db.InitDB(":memory:")
+	if err != nil {
+		t.Fatalf("InitDB: %v", err)
+	}
+	defer dbConn.Close()
+
+	store := storage.New(t.TempDir())
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10}, nil)
+	q := sqlc.New(dbConn)
+
+	// Create album
+	_, err = q.CreateAlbum(context.Background(), sqlc.CreateAlbumParams{
+		Title:       "Test Album",
+		Description: sql.NullString{String: "Test", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("CreateAlbum: %v", err)
+	}
+
+	// Create share link with message
+	vals := url.Values{}
+	vals.Set("target_type", "album")
+	vals.Set("target_id", "1")
+	vals.Set("message", "For Grandma")
+
+	req := httptest.NewRequest("POST", "/admin/shares", strings.NewReader(vals.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	h.CreateShareLink(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	// Verify share link in database
+	shares, err := q.ListShareLinks(context.Background(), sqlc.ListShareLinksParams{Limit: 10, Offset: 0})
+	if err != nil {
+		t.Fatalf("ListShareLinks: %v", err)
+	}
+
+	if len(shares) != 1 {
+		t.Fatalf("expected 1 share link, got %d", len(shares))
+	}
+
+	share := shares[0]
+	if !share.Message.Valid || share.Message.String != "For Grandma" {
+		t.Fatalf("expected message 'For Grandma', got %v", share.Message)
+	}
+}

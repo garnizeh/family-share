@@ -33,17 +33,18 @@ func (q *Queries) CountUniqueShareLinkViews(ctx context.Context, shareLinkID int
 }
 
 const createShareLink = `-- name: CreateShareLink :one
-INSERT INTO share_links (token, target_type, target_id, max_views, expires_at)
-VALUES (?, ?, ?, ?, ?)
-RETURNING id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at
+INSERT INTO share_links (token, target_type, target_id, max_views, expires_at, message)
+VALUES (?, ?, ?, ?, ?, ?)
+RETURNING id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at, message
 `
 
 type CreateShareLinkParams struct {
-	Token      string        `json:"token"`
-	TargetType string        `json:"target_type"`
-	TargetID   int64         `json:"target_id"`
-	MaxViews   sql.NullInt64 `json:"max_views"`
-	ExpiresAt  sql.NullTime  `json:"expires_at"`
+	Token      string         `json:"token"`
+	TargetType string         `json:"target_type"`
+	TargetID   int64          `json:"target_id"`
+	MaxViews   sql.NullInt64  `json:"max_views"`
+	ExpiresAt  sql.NullTime   `json:"expires_at"`
+	Message    sql.NullString `json:"message"`
 }
 
 func (q *Queries) CreateShareLink(ctx context.Context, arg CreateShareLinkParams) (ShareLink, error) {
@@ -53,6 +54,7 @@ func (q *Queries) CreateShareLink(ctx context.Context, arg CreateShareLinkParams
 		arg.TargetID,
 		arg.MaxViews,
 		arg.ExpiresAt,
+		arg.Message,
 	)
 	var i ShareLink
 	err := row.Scan(
@@ -64,6 +66,7 @@ func (q *Queries) CreateShareLink(ctx context.Context, arg CreateShareLinkParams
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.RevokedAt,
+		&i.Message,
 	)
 	return i, err
 }
@@ -105,7 +108,7 @@ func (q *Queries) DeleteExpiredShareLinks(ctx context.Context) ([]DeleteExpiredS
 }
 
 const getShareLink = `-- name: GetShareLink :one
-SELECT id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at FROM share_links WHERE id = ?
+SELECT id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at, message FROM share_links WHERE id = ?
 `
 
 func (q *Queries) GetShareLink(ctx context.Context, id int64) (ShareLink, error) {
@@ -120,12 +123,13 @@ func (q *Queries) GetShareLink(ctx context.Context, id int64) (ShareLink, error)
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.RevokedAt,
+		&i.Message,
 	)
 	return i, err
 }
 
 const getShareLinkByToken = `-- name: GetShareLinkByToken :one
-SELECT id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at FROM share_links WHERE token = ?
+SELECT id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at, message FROM share_links WHERE token = ?
 `
 
 func (q *Queries) GetShareLinkByToken(ctx context.Context, token string) (ShareLink, error) {
@@ -140,6 +144,7 @@ func (q *Queries) GetShareLinkByToken(ctx context.Context, token string) (ShareL
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.RevokedAt,
+		&i.Message,
 	)
 	return i, err
 }
@@ -159,7 +164,7 @@ func (q *Queries) IncrementShareLinkView(ctx context.Context, arg IncrementShare
 }
 
 const listActiveShareLinks = `-- name: ListActiveShareLinks :many
-SELECT id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at FROM share_links
+SELECT id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at, message FROM share_links
 WHERE revoked_at IS NULL
   AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
 ORDER BY created_at DESC
@@ -189,6 +194,7 @@ func (q *Queries) ListActiveShareLinks(ctx context.Context, arg ListActiveShareL
 			&i.ExpiresAt,
 			&i.CreatedAt,
 			&i.RevokedAt,
+			&i.Message,
 		); err != nil {
 			return nil, err
 		}
@@ -204,7 +210,7 @@ func (q *Queries) ListActiveShareLinks(ctx context.Context, arg ListActiveShareL
 }
 
 const listShareLinks = `-- name: ListShareLinks :many
-SELECT id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at FROM share_links
+SELECT id, token, target_type, target_id, max_views, expires_at, created_at, revoked_at, message FROM share_links
 ORDER BY created_at DESC
 LIMIT ? OFFSET ?
 `
@@ -232,6 +238,7 @@ func (q *Queries) ListShareLinks(ctx context.Context, arg ListShareLinksParams) 
 			&i.ExpiresAt,
 			&i.CreatedAt,
 			&i.RevokedAt,
+			&i.Message,
 		); err != nil {
 			return nil, err
 		}
@@ -248,7 +255,7 @@ func (q *Queries) ListShareLinks(ctx context.Context, arg ListShareLinksParams) 
 
 const listShareLinksWithDetails = `-- name: ListShareLinksWithDetails :many
 SELECT 
-    sl.id, sl.token, sl.target_type, sl.target_id, sl.max_views, sl.expires_at, sl.created_at, sl.revoked_at,
+    sl.id, sl.token, sl.target_type, sl.target_id, sl.max_views, sl.expires_at, sl.created_at, sl.revoked_at, sl.message,
     CASE 
         WHEN sl.target_type = 'album' THEN a.title
         WHEN sl.target_type = 'photo' THEN (SELECT title FROM albums WHERE id = p.album_id)
@@ -271,17 +278,18 @@ type ListShareLinksWithDetailsParams struct {
 }
 
 type ListShareLinksWithDetailsRow struct {
-	ID           int64         `json:"id"`
-	Token        string        `json:"token"`
-	TargetType   string        `json:"target_type"`
-	TargetID     int64         `json:"target_id"`
-	MaxViews     sql.NullInt64 `json:"max_views"`
-	ExpiresAt    sql.NullTime  `json:"expires_at"`
-	CreatedAt    sql.NullTime  `json:"created_at"`
-	RevokedAt    sql.NullTime  `json:"revoked_at"`
-	TargetTitle  interface{}   `json:"target_title"`
-	PhotoAlbumID interface{}   `json:"photo_album_id"`
-	CurrentViews int64         `json:"current_views"`
+	ID           int64          `json:"id"`
+	Token        string         `json:"token"`
+	TargetType   string         `json:"target_type"`
+	TargetID     int64          `json:"target_id"`
+	MaxViews     sql.NullInt64  `json:"max_views"`
+	ExpiresAt    sql.NullTime   `json:"expires_at"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
+	RevokedAt    sql.NullTime   `json:"revoked_at"`
+	Message      sql.NullString `json:"message"`
+	TargetTitle  interface{}    `json:"target_title"`
+	PhotoAlbumID interface{}    `json:"photo_album_id"`
+	CurrentViews int64          `json:"current_views"`
 }
 
 func (q *Queries) ListShareLinksWithDetails(ctx context.Context, arg ListShareLinksWithDetailsParams) ([]ListShareLinksWithDetailsRow, error) {
@@ -302,6 +310,7 @@ func (q *Queries) ListShareLinksWithDetails(ctx context.Context, arg ListShareLi
 			&i.ExpiresAt,
 			&i.CreatedAt,
 			&i.RevokedAt,
+			&i.Message,
 			&i.TargetTitle,
 			&i.PhotoAlbumID,
 			&i.CurrentViews,

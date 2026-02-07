@@ -243,3 +243,26 @@ func (q *Queries) ListPhotosByAlbum(ctx context.Context, arg ListPhotosByAlbumPa
 	}
 	return items, nil
 }
+
+const updatePhotoDimensions = `-- name: UpdatePhotoDimensions :exec
+UPDATE photos
+SET width = ?, height = ?, size_bytes = ?
+WHERE id = ?
+`
+
+type UpdatePhotoDimensionsParams struct {
+	Width     int64 `json:"width"`
+	Height    int64 `json:"height"`
+	SizeBytes int64 `json:"size_bytes"`
+	ID        int64 `json:"id"`
+}
+
+func (q *Queries) UpdatePhotoDimensions(ctx context.Context, arg UpdatePhotoDimensionsParams) error {
+	_, err := q.db.ExecContext(ctx, updatePhotoDimensions,
+		arg.Width,
+		arg.Height,
+		arg.SizeBytes,
+		arg.ID,
+	)
+	return err
+}

@@ -91,6 +91,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 			r.Get("/photos/{id}.webp", h.ServePhoto)
 			r.Delete("/photos/{id}", h.DeletePhoto)
 			r.Post("/photos/{id}/set-cover", h.SetCoverPhoto)
+			r.Post("/photos/{id}/rotate", h.AdminRotatePhoto)
 
 			// Share link management
 			r.Get("/shares", h.ListShareLinks)

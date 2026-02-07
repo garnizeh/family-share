@@ -61,6 +61,7 @@ type Querier interface {
 	SetAlbumCover(ctx context.Context, arg SetAlbumCoverParams) error
 	UpdateAlbum(ctx context.Context, arg UpdateAlbumParams) error
 	UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams) error
+	UpdatePhotoDimensions(ctx context.Context, arg UpdatePhotoDimensionsParams) error
 }
 
 var _ Querier = (*Queries)(nil)
