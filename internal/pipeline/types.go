@@ -10,4 +10,4 @@ var (
 )
 
 // Default maximum dimension (width or height) allowed by validator.
-const MaxDimension = 8000
+const MaxDimension = 10000
