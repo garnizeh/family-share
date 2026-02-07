@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"familyshare/internal/config"
+	"familyshare/internal/worker"
 	"io"
 	"mime/multipart"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -38,7 +40,13 @@ func TestTempFilesRemovedAfterSuccess(t *testing.T) {
 	os.Setenv("TEMP_UPLOAD_DIR", tmpd)
 
 	store := storage.New("./data")
-	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
+	cfg := &config.Config{RateLimitShare: 60, RateLimitAdmin: 10}
+	wrk := worker.NewWorker(dbConn, store, cfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	wrk.Start(ctx)
+
+	h := handler.New(dbConn, store, web.EmbedFS, cfg, wrk)
 
 	q := sqlc.New(dbConn)
 	album, err := q.CreateAlbum(context.Background(), sqlc.CreateAlbumParams{Title: "test", Description: sql.NullString{String: "", Valid: false}})
@@ -64,6 +72,22 @@ func TestTempFilesRemovedAfterSuccess(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	h.AdminUploadPhotos(w, req)
+
+	// Wait for worker to pick up and process (it will fail due to bad image, but that triggers cleanup)
+	deadline := time.Now().Add(5 * time.Second)
+	var processed bool
+	for time.Now().Before(deadline) {
+		var status string
+		err := dbConn.QueryRow("SELECT status FROM processing_queue LIMIT 1").Scan(&status)
+		if err == nil && (status == "completed" || status == "failed") {
+			processed = true
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if !processed {
+		t.Fatal("timed out waiting for worker to process job")
+	}
 
 	// ensure no upload-*.tmp files remain in tmpd
 	files, err := filepath.Glob(filepath.Join(tmpd, "upload-*.tmp"))
@@ -91,7 +115,13 @@ func TestTempFilesRemovedAfterFailure(t *testing.T) {
 	os.Setenv("TEMP_UPLOAD_DIR", tmpd)
 
 	store := storage.New("./data")
-	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
+	cfg := &config.Config{RateLimitShare: 60, RateLimitAdmin: 10}
+	wrk := worker.NewWorker(dbConn, store, cfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	wrk.Start(ctx)
+
+	h := handler.New(dbConn, store, web.EmbedFS, cfg, wrk)
 
 	q := sqlc.New(dbConn)
 	album, err := q.CreateAlbum(context.Background(), sqlc.CreateAlbumParams{Title: "test", Description: sql.NullString{String: "", Valid: false}})
@@ -117,6 +147,22 @@ func TestTempFilesRemovedAfterFailure(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	h.AdminUploadPhotos(w, req)
+
+	// Wait for worker
+	deadline := time.Now().Add(5 * time.Second)
+	var processed bool
+	for time.Now().Before(deadline) {
+		var status string
+		err := dbConn.QueryRow("SELECT status FROM processing_queue LIMIT 1").Scan(&status)
+		if err == nil && (status == "completed" || status == "failed") {
+			processed = true
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if !processed {
+		t.Fatal("timed out waiting for worker to process job")
+	}
 
 	files, err := filepath.Glob(filepath.Join(tmpd, "upload-*.tmp"))
 	if err != nil {

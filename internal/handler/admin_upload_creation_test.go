@@ -39,7 +39,7 @@ func TestTempFileCreatedDuringUpload(t *testing.T) {
 	os.Setenv("TEMP_UPLOAD_DIR", tmpd)
 
 	store := storage.New("./data")
-	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10}, nil)
 
 	q := sqlc.New(dbConn)
 	album, err := q.CreateAlbum(context.Background(), sqlc.CreateAlbumParams{Title: "test", Description: sql.NullString{String: "", Valid: false}})
@@ -99,8 +99,12 @@ func TestTempFileCreatedDuringUpload(t *testing.T) {
 	// Wait for handler to finish
 	<-done
 
-	// After completion, temp file should be removed
-	if _, err := os.Stat(found); !os.IsNotExist(err) {
-		t.Fatalf("expected temp file to be removed after processing, still exists: %s", found)
+	// After completion, temp file should STILL exist (because it's queued for worker)
+	// We verify it exists, then clean it up manually since we have no worker running in this test.
+	if _, err := os.Stat(found); os.IsNotExist(err) {
+		t.Fatalf("expected temp file to exist (queued for worker), but it is gone: %s", found)
 	}
+
+	// Cleanup
+	os.Remove(found)
 }

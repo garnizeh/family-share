@@ -1,3 +1,4 @@
+-- initial schema for family-share application
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS schema_migrations (

@@ -17,6 +17,7 @@ import (
 	"familyshare/internal/handler"
 	"familyshare/internal/janitor"
 	"familyshare/internal/storage"
+	"familyshare/internal/worker"
 	"familyshare/web"
 )
 
@@ -36,6 +37,9 @@ func main() {
 	// Initialize storage
 	store := storage.New(cfg.DataDir)
 
+	// Initialize background worker
+	bgWorker := worker.NewWorker(database, store, cfg)
+
 	// Initialize router
 	r := chi.NewRouter()
 
@@ -47,7 +51,7 @@ func main() {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	// Initialize handlers
-	h := handler.New(database, store, web.EmbedFS, cfg)
+	h := handler.New(database, store, web.EmbedFS, cfg, bgWorker)
 
 	// Register routes
 	h.RegisterRoutes(r)
@@ -61,8 +65,12 @@ func main() {
 	})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	
 	jan.Start(ctx)
 	defer jan.Stop()
+
+	// Start worker
+	bgWorker.Start(ctx)
 
 	// Create server
 	srv := &http.Server{

@@ -25,7 +25,7 @@ func setupTestHandlerForShare(t *testing.T) (*handler.Handler, *sqlc.Queries, fu
 	storageDir, storageCleanup := testutil.SetupTestStorage(t)
 	t.Setenv("STORAGE_PATH", storageDir)
 	store := storage.New(storageDir)
-	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10}, nil)
 
 	cleanup := func() {
 		storageCleanup()

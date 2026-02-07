@@ -30,13 +30,13 @@ func TestHandlerTemplateLogging_DebugFlag(t *testing.T) {
 	log.SetOutput(buf)
 	log.SetFlags(0)
 
-	handler.New(db, store, web.EmbedFS, &config.Config{Debug: false})
+	handler.New(db, store, web.EmbedFS, &config.Config{Debug: false}, nil)
 	if strings.Contains(buf.String(), "template files to parse") || strings.Contains(buf.String(), "loaded templates") {
 		t.Fatalf("expected no verbose template logs when debug disabled, got: %s", buf.String())
 	}
 
 	buf.Reset()
-	handler.New(db, store, web.EmbedFS, &config.Config{Debug: true})
+	handler.New(db, store, web.EmbedFS, &config.Config{Debug: true}, nil)
 	if !strings.Contains(buf.String(), "loaded templates") {
 		t.Fatalf("expected verbose template logs when debug enabled, got: %s", buf.String())
 	}
