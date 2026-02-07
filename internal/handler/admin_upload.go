@@ -86,6 +86,9 @@ func (h *Handler) AdminUploadStatus(w http.ResponseWriter, r *http.Request) {
 		percent = int((processed / total) * 100)
 	}
 
+	activeCount := int64(status.PendingCount.Float64) + int64(status.ProcessingCount.Float64)
+	polling := activeCount > 0
+
 	data := struct {
 		Album struct {
 			ID int64
@@ -97,6 +100,8 @@ func (h *Handler) AdminUploadStatus(w http.ResponseWriter, r *http.Request) {
 			FailedCount     int64
 			Percent         int
 		}
+		StatsLoaded bool
+		Polling     bool
 	}{
 		Album: struct{ ID int64 }{ID: albumID},
 		Stats: struct {
@@ -112,6 +117,8 @@ func (h *Handler) AdminUploadStatus(w http.ResponseWriter, r *http.Request) {
 			FailedCount:     int64(status.FailedCount.Float64),
 			Percent:         percent,
 		},
+		StatsLoaded: true,
+		Polling:     polling,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
