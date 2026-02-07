@@ -29,7 +29,7 @@ func TestFriendlyUploadErrorMapping(t *testing.T) {
 		{
 			name: "invalid dimensions",
 			err:  pipeline.ErrInvalidDimensions,
-			want: "8000",
+			want: "10000",
 		},
 		{
 			name: "too large",
