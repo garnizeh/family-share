@@ -72,6 +72,14 @@
         <p id="expires-help" class="form-hint">Leave blank for no expiration</p>
     </div>
 
+    <div style="margin-bottom: var(--space-4);">
+        <label for="message" class="form-label">Message (Optional)</label>
+        <textarea id="message" name="message" class="form-input" rows="2" aria-describedby="message-help"
+            placeholder="e.g. 'Photos from grandma's birthday'"></textarea>
+        <p id="message-help" class="form-hint">Internal note to remember why this link was created (not visible to
+            visitors).</p>
+    </div>
+
     <div id="share-form-error" role="alert" aria-live="polite"
         style="display: none; margin-bottom: var(--space-4); padding: var(--space-3); background: var(--color-error-bg, #fee); border: 1px solid var(--color-error, #f00); border-radius: var(--radius-sm, 4px); color: var(--color-error, #f00);">
     </div>

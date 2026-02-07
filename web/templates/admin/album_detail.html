@@ -86,6 +86,16 @@
                         <p class="text-xs text-muted mb-0">{{.Filename}}</p>
                     </div>
                     <div class="card-photo-actions">
+                        <button hx-post="/admin/photos/{{.ID}}/rotate?angle=90" hx-trigger="click" hx-swap="none"
+                            class="btn btn-secondary btn-sm btn-icon" title="Rotate Left (90°)"
+                            aria-label="Rotate Left">
+                            ↺
+                        </button>
+                        <button hx-post="/admin/photos/{{.ID}}/rotate?angle=-90" hx-trigger="click" hx-swap="none"
+                            class="btn btn-secondary btn-sm btn-icon" title="Rotate Right (90°)"
+                            aria-label="Rotate Right">
+                            ↻
+                        </button>
                         <button hx-post="/admin/photos/{{.ID}}/set-cover" hx-trigger="click" hx-swap="none"
                             class="btn btn-secondary btn-sm btn-icon" title="Set as cover photo"
                             aria-label="Set as cover photo">

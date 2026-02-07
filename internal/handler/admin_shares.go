@@ -124,6 +124,13 @@ func (h *Handler) CreateShareLink(w http.ResponseWriter, r *http.Request) {
 		expiresAt = sql.NullTime{Time: t, Valid: true}
 	}
 
+	// Parse message (optional)
+	message := r.PostFormValue("message")
+	var messageSQL sql.NullString
+	if message != "" {
+		messageSQL = sql.NullString{String: message, Valid: true}
+	}
+
 	q := sqlc.New(h.db)
 
 	// Verify target exists
@@ -158,6 +165,7 @@ func (h *Handler) CreateShareLink(w http.ResponseWriter, r *http.Request) {
 			TargetID:   targetID,
 			MaxViews:   maxViews,
 			ExpiresAt:  expiresAt,
+			Message:    messageSQL,
 		})
 
 		if err == nil {

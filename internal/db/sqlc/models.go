@@ -62,14 +62,15 @@ type Session struct {
 }
 
 type ShareLink struct {
-	ID         int64         `json:"id"`
-	Token      string        `json:"token"`
-	TargetType string        `json:"target_type"`
-	TargetID   int64         `json:"target_id"`
-	MaxViews   sql.NullInt64 `json:"max_views"`
-	ExpiresAt  sql.NullTime  `json:"expires_at"`
-	CreatedAt  sql.NullTime  `json:"created_at"`
-	RevokedAt  sql.NullTime  `json:"revoked_at"`
+	ID         int64          `json:"id"`
+	Token      string         `json:"token"`
+	TargetType string         `json:"target_type"`
+	TargetID   int64          `json:"target_id"`
+	MaxViews   sql.NullInt64  `json:"max_views"`
+	ExpiresAt  sql.NullTime   `json:"expires_at"`
+	CreatedAt  sql.NullTime   `json:"created_at"`
+	RevokedAt  sql.NullTime   `json:"revoked_at"`
+	Message    sql.NullString `json:"message"`
 }
 
 type ShareLinkView struct {
