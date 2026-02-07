@@ -46,8 +46,8 @@ fi
 # Check if .env exists
 if [ ! -f "$PROJECT_ROOT/.env" ]; then
     print_error ".env file not found!"
-    echo "Please copy .env.production.example to .env and configure it first:"
-    echo "  cp .env.production.example .env"
+    echo "Please copy .env.example to .env and configure it first:"
+    echo "  cp .env.example .env"
     echo "  nano .env"
     exit 1
 fi

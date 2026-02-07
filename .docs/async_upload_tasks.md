@@ -1,5 +1,15 @@
 # Async Upload & Queueing Implementation Plan
 
+## Status: Implementation
+
+The asynchronous upload pipeline and processing queue described below has been implemented in the codebase:
+
+- DB table: `processing_queue` (see `sql/schema/0003_add_processing_queue.sql`).
+- Handler: `internal/handler/admin_upload.go` enqueues jobs and returns a progress partial.
+- Worker: `internal/worker/worker.go` processes pending jobs, updates job status, and removes temp files.
+
+The remainder of this document describes the original design and the implementation details for maintainers.
+
 ## Concept Validation
 **Opinion:** Your idea to block new uploads while processing the previous batch is **excellent** and highly recommended for a low-resource VPS.
 1.  **Resource Safety:** It acts as a strict "Rate Limiter". By forcing the user to wait, you prevent them from flooding the server with hundreds of concurrent processing jobs that would crash the memory (OOM) or lock the CPU.
@@ -30,9 +40,10 @@
 
 ## Detailed Tasks
 
-### 1. Database Schema Changes
-We need a place to track files that are uploaded but not yet processed.
-*   **Task 1.1:** Create migration `sql/schema/00XX_add_processing_queue.sql`.
+### 1. Database Schema
+The project now includes a migration that creates `processing_queue`.
+
+If you need to inspect or regenerate the migration, check `sql/schema/0003_add_processing_queue.sql` and the `internal/db` migration runner.
     ```sql
     CREATE TABLE processing_queue (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,7 +57,7 @@ We need a place to track files that are uploaded but not yet processed.
         FOREIGN KEY(album_id) REFERENCES albums(id) ON DELETE CASCADE
     );
     ```
-*   **Task 1.2:** Generate SQLC code (`make sqlc`).
+*   SQLC code was generated and lives under `internal/db/sqlc`.
 
 ### 2. Backend Logic (Go)
 

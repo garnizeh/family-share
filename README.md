@@ -59,21 +59,28 @@ See Quick Start section above.
 
 ### VPS Deployment
 
-**Quick Deploy:**
+Quick Deploy (recommended):
+
 ```bash
-# On your VPS
+# On your VPS, from the project root
 git clone https://github.com/YOUR_USERNAME/family-share.git
 cd family-share
 cp .env.example .env
-nano .env  # Configure your settings
-./scripts/deploy.sh
+# Edit .env and set at minimum: ADMIN_PASSWORD_HASH, DATA_DIR, DOMAIN, ACME_EMAIL
+nano .env
+./scripts/deploy.sh [production|staging]
 ```
 
-**Detailed Guide:**
+Notes (be meticulous):
+- The deploy script automates pull, build, backup, Docker Compose bring-up and health checks. It validates that `DOMAIN` and `ACME_EMAIL` are present in your project `.env` and will prompt before making changes.
+- You do not normally need to edit `deploy/Caddyfile`; the deploy script and the included Caddyfile are sufficient for standard VPS use. If you have special TLS or proxy needs, edit `deploy/Caddyfile` (advanced).
+- Ensure DNS for `DOMAIN` points to your VPS before running the script so Caddy can provision certificates.
+
+Detailed Guide:
 See [VPS Deployment Guide](.docs/deployment/vps-deployment.md) for complete instructions including:
 - VPS preparation
-- Domain configuration
-- SSL setup with Caddy
+- Domain configuration via `.env`
+- SSL setup with Caddy (automatic via Caddy + ACME)
 - Backup strategies
 - Troubleshooting
 

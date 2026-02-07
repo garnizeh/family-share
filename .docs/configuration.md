@@ -31,3 +31,8 @@ go run scripts/hash_password.go YourSecurePassword123
 ```
 
 Set the result in `ADMIN_PASSWORD_HASH`.
+
+## Notes about `DOMAIN` / `ACME_EMAIL`
+
+- These values are used by the project's deployment workflow (see `.docs/deployment/vps-deployment.md`). The deploy script validates that `DOMAIN` and `ACME_EMAIL` are present in your project `.env` and will bring up Caddy so TLS can be provisioned automatically.
+- Ensure your DNS for `DOMAIN` points to the VPS before running the deploy script so ACME can complete.
