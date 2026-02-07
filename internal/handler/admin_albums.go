@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -90,20 +91,77 @@ func (h *Handler) ViewAlbum(w http.ResponseWriter, r *http.Request) {
 	// fetch photos for album
 	photos, _ := q.ListPhotosByAlbum(r.Context(), sqlc.ListPhotosByAlbumParams{AlbumID: id, Limit: 100, Offset: 0})
 
-	// Check if there are any active processing jobs
-	activeCount, err := q.CountActiveJobs(r.Context(), id)
-	if err != nil {
-		activeCount = 0
+	// Check queue status for processing batch indicator and stats
+	type uploadStats struct {
+		PendingCount    int64
+		ProcessingCount int64
+		CompletedCount  int64
+		FailedCount     int64
+		Percent         int
 	}
+
+	var stats uploadStats
+	var statsLoaded bool
+	activeCount := int64(0)
+	status, err := q.GetQueueStatus(r.Context(), id)
+	if err != nil {
+		log.Printf("failed to get upload queue status: %v", err)
+		activeCount, err = q.CountActiveJobs(r.Context(), id)
+		if err != nil {
+			log.Printf("failed to count active jobs: %v", err)
+			activeCount = 0
+		}
+	} else {
+		statsLoaded = true
+		pending := int64(0)
+		if status.PendingCount.Valid {
+			pending = int64(status.PendingCount.Float64)
+		}
+		processing := int64(0)
+		if status.ProcessingCount.Valid {
+			processing = int64(status.ProcessingCount.Float64)
+		}
+		completed := int64(0)
+		if status.CompletedCount.Valid {
+			completed = int64(status.CompletedCount.Float64)
+		}
+		failed := int64(0)
+		if status.FailedCount.Valid {
+			failed = int64(status.FailedCount.Float64)
+		}
+
+		total := float64(pending + processing + completed + failed)
+		processed := float64(completed + failed)
+		percent := 0
+		if total > 0 {
+			percent = int((processed / total) * 100)
+		}
+
+		stats = uploadStats{
+			PendingCount:    pending,
+			ProcessingCount: processing,
+			CompletedCount:  completed,
+			FailedCount:     failed,
+			Percent:         percent,
+		}
+		activeCount = pending + processing
+	}
+	polling := activeCount > 0
 
 	data := struct {
 		Album           sqlc.Album
 		Photos          []sqlc.Photo
 		ProcessingBatch bool
+		Stats           uploadStats
+		StatsLoaded     bool
+		Polling         bool
 	}{
 		Album:           alb,
 		Photos:          photos,
 		ProcessingBatch: activeCount > 0,
+		Stats:           stats,
+		StatsLoaded:     statsLoaded,
+		Polling:         polling,
 	}
 
 	if err := h.RenderTemplate(w, "album_detail.html", data); err != nil {
