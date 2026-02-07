@@ -58,11 +58,13 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 			TemplateRenderer:  h,
 			TrustedProxyCIDRs: h.config.TrustedProxyCIDRs,
 		})
-		r.Use(adminLimiter.Middleware())
 
-		// Login routes (not protected)
-		r.Get("/login", h.LoginPage)
-		r.Post("/login", h.Login)
+		// Login routes (apply rate limiting here)
+		r.Group(func(r chi.Router) {
+			r.Use(adminLimiter.Middleware())
+			r.Get("/login", h.LoginPage)
+			r.Post("/login", h.Login)
+		})
 
 		// Protected admin routes
 		r.Group(func(r chi.Router) {

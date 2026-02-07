@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -85,11 +84,22 @@ func (h *Handler) AdminRotatePhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return success
-	// HTMX request expects some content or a redirect.
-	// If HTMX, we can just trigger a reload of the image or the page.
-	// Since we are likely initiating this from a photo detail or list, let's refresh.
-	w.Header().Set("HX-Refresh", "true")
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Rotation successful")
+	// Fetch updated photo for rendering
+	updatedPhoto, err := q.GetPhoto(r.Context(), id)
+	if err != nil {
+		// Should not happen as we just updated it, but handle nicely
+		log.Printf("failed to get updated photo %d: %v", id, err)
+		w.Header().Set("HX-Refresh", "true")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Render the single photo card
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := h.RenderTemplate(w, "photo_card", updatedPhoto); err != nil {
+		log.Printf("template render error: %v", err)
+		// Fallback to refresh if template fails
+		w.Header().Set("HX-Refresh", "true")
+		w.WriteHeader(http.StatusOK)
+	}
 }
