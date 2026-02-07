@@ -48,7 +48,9 @@ func main() {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(60 * time.Second))
+	// Increase the request context timeout to accommodate large uploads
+	// (multipart uploads can take longer than the default 60s).
+	r.Use(middleware.Timeout(15 * time.Minute))
 
 	// Initialize handlers
 	h := handler.New(database, store, web.EmbedFS, cfg, bgWorker)
@@ -74,10 +76,11 @@ func main() {
 
 	// Create server
 	srv := &http.Server{
-		Addr:         cfg.ServerAddr,
-		Handler:      r,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 60 * time.Second,
+		Addr:    cfg.ServerAddr,
+		Handler: r,
+		// Increase read timeout to allow slow/large uploads to stream.
+		ReadTimeout:  15 * time.Minute,
+		WriteTimeout: 30 * time.Minute,
 		IdleTimeout:  120 * time.Second,
 	}
 
