@@ -33,7 +33,7 @@ func TestAdminLogin_CSRFRequired(t *testing.T) {
 		CSRFSecret:        "test-secret",
 	}
 
-	h := handler.New(db, storage.New(t.TempDir()), web.EmbedFS, cfg)
+	h := handler.New(db, storage.New(t.TempDir()), web.EmbedFS, cfg, nil)
 	r := chi.NewRouter()
 	h.RegisterRoutes(r)
 

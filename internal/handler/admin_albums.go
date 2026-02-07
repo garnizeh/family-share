@@ -90,12 +90,20 @@ func (h *Handler) ViewAlbum(w http.ResponseWriter, r *http.Request) {
 	// fetch photos for album
 	photos, _ := q.ListPhotosByAlbum(r.Context(), sqlc.ListPhotosByAlbumParams{AlbumID: id, Limit: 100, Offset: 0})
 
+	// Check if there are any active processing jobs
+	activeCount, err := q.CountActiveJobs(r.Context(), id)
+	if err != nil {
+		activeCount = 0
+	}
+
 	data := struct {
-		Album  sqlc.Album
-		Photos []sqlc.Photo
+		Album           sqlc.Album
+		Photos          []sqlc.Photo
+		ProcessingBatch bool
 	}{
-		Album:  alb,
-		Photos: photos,
+		Album:           alb,
+		Photos:          photos,
+		ProcessingBatch: activeCount > 0,
 	}
 
 	if err := h.RenderTemplate(w, "album_detail.html", data); err != nil {

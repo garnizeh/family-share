@@ -16,6 +16,7 @@ import (
 	"familyshare/internal/metrics"
 	"familyshare/internal/security"
 	"familyshare/internal/storage"
+	"familyshare/internal/worker"
 )
 
 type Handler struct {
@@ -27,9 +28,10 @@ type Handler struct {
 	tmplMu    sync.RWMutex
 	config    *config.Config
 	metrics   *metrics.Logger
+	worker    *worker.Worker
 }
 
-func New(database *sql.DB, store *storage.Storage, embedFS embed.FS, cfg *config.Config) *Handler {
+func New(database *sql.DB, store *storage.Storage, embedFS embed.FS, cfg *config.Config, worker *worker.Worker) *Handler {
 	debug := cfg != nil && cfg.Debug
 	if cfg != nil {
 		security.SetTrustedProxyCIDRs(cfg.TrustedProxyCIDRs)

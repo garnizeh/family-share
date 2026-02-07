@@ -10,8 +10,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -64,7 +62,7 @@ func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
 	t.Setenv("STORAGE_PATH", storageDir)
 
 	store := storage.New(storageDir)
-	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10}, nil)
 
 	album, err := q.CreateAlbum(context.Background(), sqlc.CreateAlbumParams{Title: "test", Description: sql.NullString{String: "", Valid: false}})
 	if err != nil {
@@ -92,22 +90,23 @@ func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
 		t.Fatalf("single upload status: %d, body: %s", res.StatusCode, w.Body.String())
 	}
 	buf := w.Body.String()
-	if !strings.Contains(buf, "Successfully uploaded (ID:") {
-		t.Fatalf("expected uploaded partial, got body: %s", buf)
+	// Update test expectation: now returns progress bar HTML, not immediate success row
+	if !strings.Contains(buf, "upload-container") || !strings.Contains(buf, "Processing Photos") {
+		t.Fatalf("expected progress container, got body: %s", buf)
 	}
 
-	// verify a photo file was written under storage directory
-	// photos are stored under storage.PhotoPath(base, albumID, photoID, ext)
-	// find any file under storageDir recursively
-	var found bool
-	_ = filepath.Walk(storageDir, func(p string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() {
-			found = true
-		}
-		return nil
-	})
-	if !found {
-		t.Fatalf("expected stored photo file in %s", storageDir)
+	// Wait for worker to process (since we passed nil worker, this test environment relies on Manual processing?
+	// No, the tests pass nil worker, so the handler queues the job but nothing processes it.
+	// We need to test that the JOB was enqueued.
+
+	// Check queue table
+	var count int
+	err = dbConn.QueryRow("SELECT count(*) FROM processing_queue WHERE status = 'pending'").Scan(&count)
+	if err != nil {
+		t.Fatalf("failed to query queue: %v", err)
+	}
+	if count != 1 {
+		t.Errorf("expected 1 pending job, got %d", count)
 	}
 
 	// --- Batch upload (3 files) ---
@@ -129,8 +128,20 @@ func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
 	if w2.Result().StatusCode != 200 {
 		t.Fatalf("batch upload status: %d", w2.Result().StatusCode)
 	}
-	if strings.Count(w2.Body.String(), "Successfully uploaded (ID:") < 3 {
-		t.Fatalf("expected 3 uploaded partials, got: %s", w2.Body.String())
+
+	// Expect progress bar again
+	if !strings.Contains(w2.Body.String(), "upload-container") {
+		t.Fatalf("expected progress container, got: %s", w2.Body.String())
+	}
+
+	// Check queue count increases
+	err = dbConn.QueryRow("SELECT count(*) FROM processing_queue WHERE status = 'pending'").Scan(&count)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 1 existing + 3 new = 4
+	if count != 4 {
+		t.Errorf("expected 4 pending jobs, got %d", count)
 	}
 
 	// --- Invalid file upload ---
@@ -148,11 +159,32 @@ func TestAdminUpload_SingleAndBatchAndInvalid(t *testing.T) {
 
 	w3 := httptest.NewRecorder()
 	h.AdminUploadPhotos(w3, req3)
+	// Even for invalid files, they are queued first, then fail in worker.
+	// So response is still success (progress bar).
+	err = dbConn.QueryRow("SELECT count(*) FROM processing_queue WHERE status = 'pending'").Scan(&count)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 5 {
+		t.Errorf("expected 5 pending jobs, got %d", count)
+	}
+
+	// Even for invalid files, they are queued first, then fail in worker.
+	// So response is still success (progress bar).
+	err = dbConn.QueryRow("SELECT count(*) FROM processing_queue WHERE status = 'pending'").Scan(&count)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 5 {
+		t.Errorf("expected 5 pending jobs, got %d", count)
+	}
 	if w3.Result().StatusCode != 200 {
 		t.Fatalf("invalid upload status: %d", w3.Result().StatusCode)
 	}
-	if !strings.Contains(w3.Body.String(), "Unsupported file type") {
-		t.Fatalf("expected friendly error message, got: %s", w3.Body.String())
+	// In async mode, invalid files are queued and fail later (in worker).
+	// So we don't get an immediate error message in the response.
+	if !strings.Contains(w3.Body.String(), "upload-container") {
+		t.Fatalf("expected progress interface, got: %s", w3.Body.String())
 	}
 }
 
@@ -164,7 +196,7 @@ func TestAdminUpload_SizeLimitRejection(t *testing.T) {
 	defer storageCleanup()
 
 	store := storage.New(storageDir)
-	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10}, nil)
 
 	album, err := q.CreateAlbum(context.Background(), sqlc.CreateAlbumParams{Title: "test", Description: sql.NullString{String: "", Valid: false}})
 	if err != nil {
@@ -204,12 +236,17 @@ func TestAdminUpload_SizeLimitRejection(t *testing.T) {
 		t.Fatalf("expected 200 with error partial, got: %d", res.StatusCode)
 	}
 
-	responseBody := w.Body.String()
-	if !strings.Contains(responseBody, "File is too large") {
-		t.Fatalf("expected friendly size error, got: %s", responseBody)
+	// In async/queue mode, files exceeding size limit are silently skipped (logged)
+	// and not enqueued. The user interface just shows status.
+	// We verify that no job was queued (DB check below verifies no photo created, but we should also check queue).
+
+	var count int
+	err = dbConn.QueryRow("SELECT count(*) FROM processing_queue").Scan(&count)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(responseBody, "25MB") {
-		t.Fatalf("expected size limit hint, got: %s", responseBody)
+	if count != 0 {
+		t.Errorf("expected 0 queued jobs for oversized file, got %d", count)
 	}
 
 	// Verify no photo was created in DB

@@ -84,6 +84,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 			r.Delete("/albums/{id}", h.DeleteAlbum)
 
 			// Photo upload
+			r.Get("/upload/status", h.AdminUploadStatus)
 			r.Post("/albums/{id}/photos", h.AdminUploadPhotos)
 
 			// Photo management

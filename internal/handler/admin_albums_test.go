@@ -27,7 +27,7 @@ func TestCreateAndListAndUpdateAndDeleteAlbum(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10}, nil)
 	q := sqlc.New(dbConn)
 
 	// Create album via handler
@@ -110,7 +110,7 @@ func TestCreateAlbumValidation(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10}, nil)
 
 	// Missing title -> bad request
 	vals := url.Values{}

@@ -56,7 +56,7 @@ func TestLogin_Success(t *testing.T) {
 	dbConn, _ := db.InitDB(":memory:")
 	t.Cleanup(func() { dbConn.Close() })
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS, cfg)
+	h := handler.New(dbConn, store, web.EmbedFS, cfg, nil)
 
 	// Create login request
 	form := url.Values{}
@@ -123,7 +123,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 	dbConn, _ := db.InitDB(":memory:")
 	t.Cleanup(func() { dbConn.Close() })
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS, cfg)
+	h := handler.New(dbConn, store, web.EmbedFS, cfg, nil)
 
 	// Try to login with wrong password
 	form := url.Values{}
@@ -167,7 +167,7 @@ func TestLogin_NoPasswordConfigured(t *testing.T) {
 	dbConn, _ := db.InitDB(":memory:")
 	t.Cleanup(func() { dbConn.Close() })
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS, cfg)
+	h := handler.New(dbConn, store, web.EmbedFS, cfg, nil)
 
 	form := url.Values{}
 	form.Set("password", "anypassword")
@@ -208,7 +208,7 @@ func TestLogout(t *testing.T) {
 	dbConn, _ := db.InitDB(":memory:")
 	t.Cleanup(func() { dbConn.Close() })
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS, cfg)
+	h := handler.New(dbConn, store, web.EmbedFS, cfg, nil)
 
 	// Login to create a session
 	form := url.Values{}
@@ -288,6 +288,6 @@ func setupTestHandler(t *testing.T) *handler.Handler {
 		RateLimitShare: 60,
 		RateLimitAdmin: 10,
 	}
-	h := handler.New(dbConn, store, web.EmbedFS, cfg)
+	h := handler.New(dbConn, store, web.EmbedFS, cfg, nil)
 	return h
 }

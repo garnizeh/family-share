@@ -9,24 +9,12 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
+	"familyshare/internal/db/sqlc"
 	"familyshare/internal/pipeline"
 )
-
-// contextKey is a custom type for context keys to avoid collisions
-type contextKey string
-
-const adminUploadKey contextKey = "admin-upload"
-
-// UploadResult is passed to the HTMX partial for each uploaded file.
-type UploadResult struct {
-	Filename string
-	PhotoID  int64
-	Error    string
-}
 
 var errUploadTooLarge = errors.New("upload exceeds per-file limit")
 
@@ -49,12 +37,92 @@ func friendlyUploadError(err error, maxPerFile int64) string {
 	}
 }
 
-// AdminUploadPhotos handles multipart photo uploads for an album.
-func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
-	// Set per-request timeout to avoid hung uploads
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Minute)
-	defer cancel()
+// AdminUploadStatus returns htmx partial with progress of background processing
+func (h *Handler) AdminUploadStatus(w http.ResponseWriter, r *http.Request) {
+	albumIDStr := r.URL.Query().Get("album_id")
+	albumID, err := strconv.ParseInt(albumIDStr, 10, 64)
+	if err != nil {
+		// If called from URL param
+		albumIDStr = chi.URLParam(r, "id")
+		albumID, err = strconv.ParseInt(albumIDStr, 10, 64)
+		if err != nil {
+			http.Error(w, "Invalid album ID", http.StatusBadRequest)
+			return
+		}
+	}
 
+	status, err := h.queries.GetQueueStatus(r.Context(), albumID)
+	if err != nil {
+		log.Printf("failed to get queue status: %v", err)
+		http.Error(w, "Check failed", http.StatusInternalServerError)
+		return
+	}
+
+	// Calculate statistics
+	total := 0.0
+	if status.PendingCount.Valid {
+		total += status.PendingCount.Float64
+	}
+	if status.ProcessingCount.Valid {
+		total += status.ProcessingCount.Float64
+	}
+	if status.CompletedCount.Valid {
+		total += status.CompletedCount.Float64
+	}
+	if status.FailedCount.Valid {
+		total += status.FailedCount.Float64
+	}
+
+	processed := 0.0
+	if status.CompletedCount.Valid {
+		processed += status.CompletedCount.Float64
+	}
+	if status.FailedCount.Valid {
+		processed += status.FailedCount.Float64
+	}
+
+	percent := 0
+	if total > 0 {
+		percent = int((processed / total) * 100)
+	}
+
+	data := struct {
+		Album struct {
+			ID int64
+		}
+		Stats struct {
+			PendingCount    int64
+			ProcessingCount int64
+			CompletedCount  int64
+			FailedCount     int64
+			Percent         int
+		}
+	}{
+		Album: struct{ ID int64 }{ID: albumID},
+		Stats: struct {
+			PendingCount    int64
+			ProcessingCount int64
+			CompletedCount  int64
+			FailedCount     int64
+			Percent         int
+		}{
+			PendingCount:    int64(status.PendingCount.Float64),
+			ProcessingCount: int64(status.ProcessingCount.Float64),
+			CompletedCount:  int64(status.CompletedCount.Float64),
+			FailedCount:     int64(status.FailedCount.Float64),
+			Percent:         percent,
+		},
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := h.RenderTemplate(w, "upload_progress", data); err != nil {
+		log.Printf("failed to render upload_progress: %v", err)
+	}
+}
+
+// AdminUploadPhotos handles multipart photo uploads for an album
+// It now queues files for background processing instead of processing them synchronously
+func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 	albumIDStr := chi.URLParam(r, "id")
 	albumID, err := strconv.ParseInt(albumIDStr, 10, 64)
 	if err != nil {
@@ -62,29 +130,26 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Total upload limit (100MB)
-	const maxTotal = int64(100 << 20)
+	// Total upload limit increased for batching (500MB)
+	const maxTotal = int64(500 << 20)
 	r.Body = http.MaxBytesReader(w, r.Body, maxTotal)
 
-	// Use MultipartReader to stream parts to disk
 	mr, err := r.MultipartReader()
 	if err != nil {
 		http.Error(w, "failed to read multipart", http.StatusBadRequest)
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	flusher, _ := w.(http.Flusher)
-
-	// Determine temp dir: prefer TEMP_UPLOAD_DIR env var (for tests/custom paths), fallback to system temp dir
+	// Determine temp dir
 	tmpBaseDir := os.Getenv("TEMP_UPLOAD_DIR")
 	if tmpBaseDir == "" {
 		tmpBaseDir = os.TempDir()
 	}
-	// Ensure directory exists
 	_ = os.MkdirAll(tmpBaseDir, 0700)
 
-	const maxPerFile = int64(25 << 20) // 25MB
+	const maxPerFile = int64(25 << 20) // 25MB per file
+
+	filesQueued := 0
 
 	for {
 		part, err := mr.NextPart()
@@ -92,7 +157,7 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if err != nil {
-			// log and continue to next part
+			log.Printf("multipart read error: %v", err)
 			continue
 		}
 
@@ -101,102 +166,58 @@ func (h *Handler) AdminUploadPhotos(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		var result UploadResult
-		result.Filename = part.FileName()
+		filename := part.FileName()
+		if filename == "" {
+			part.Close()
+			continue
+		}
 
 		// Create temp file
 		tmp, err := os.CreateTemp(tmpBaseDir, "upload-*.tmp")
 		if err != nil {
-			log.Printf("upload temp file creation failed for %s: %v", result.Filename, err)
-			result.Error = friendlyUploadError(err, maxPerFile)
-			if err := h.RenderTemplate(w, "upload_row.html", result); err != nil {
-				log.Printf("failed to render error template: %v", err)
-			}
-			if flusher != nil {
-				flusher.Flush()
-			}
+			log.Printf("failed to create temp file for %s: %v", filename, err)
 			part.Close()
 			continue
 		}
-		// Restrictive permissions
-		_ = tmp.Chmod(0600)
 
-		// Copy with size limit
+		// Copy file content
 		n, err := io.Copy(tmp, io.LimitReader(part, maxPerFile+1))
+		part.Close()
+		tmp.Close() // Close immediately after writing
+
 		if err != nil {
-			copyErr := fmt.Errorf("read failed: %w", err)
-			log.Printf("upload read failed for %s: %v", result.Filename, copyErr)
-			tmp.Close()
+			log.Printf("failed to save temp file for %s: %v", filename, err)
 			os.Remove(tmp.Name())
-			result.Error = friendlyUploadError(copyErr, maxPerFile)
-			if err := h.RenderTemplate(w, "upload_row.html", result); err != nil {
-				log.Printf("failed to render error template: %v", err)
-			}
-			if flusher != nil {
-				flusher.Flush()
-			}
-			part.Close()
 			continue
 		}
 
 		if n > maxPerFile {
-			log.Printf("upload too large for %s: %d bytes", result.Filename, n)
-			tmp.Close()
+			log.Printf("file too large: %s", filename)
 			os.Remove(tmp.Name())
-			result.Error = friendlyUploadError(errUploadTooLarge, maxPerFile)
-			if err := h.RenderTemplate(w, "upload_row.html", result); err != nil {
-				log.Printf("failed to render error template: %v", err)
-			}
-			if flusher != nil {
-				flusher.Flush()
-			}
-			part.Close()
 			continue
 		}
 
-		// Seek to beginning for pipeline
-		if _, err := tmp.Seek(0, 0); err != nil {
-			seekErr := fmt.Errorf("seek failed: %w", err)
-			log.Printf("upload seek failed for %s: %v", result.Filename, seekErr)
-			tmp.Close()
-			os.Remove(tmp.Name())
-			result.Error = friendlyUploadError(seekErr, maxPerFile)
-			if err := h.RenderTemplate(w, "upload_row.html", result); err != nil {
-				log.Printf("failed to render error template: %v", err)
-			}
-			if flusher != nil {
-				flusher.Flush()
-			}
-			part.Close()
-			continue
-		}
-
-		// Process through pipeline
-		format := "webp"
-		if h.config != nil && h.config.ImageFormat != "" {
-			format = h.config.ImageFormat
-		}
-		photo, err := pipeline.ProcessAndSaveWithFormat(context.WithValue(ctx, adminUploadKey, true), h.db, albumID, tmp, n, h.storage.BaseDir, format)
-
-		// Cleanup temp file always
-		tmp.Close()
-		os.Remove(tmp.Name())
-		part.Close()
-
+		// Enqueue the job
+		_, err = h.queries.EnqueueJob(context.Background(), sqlc.EnqueueJobParams{
+			AlbumID:          albumID,
+			OriginalFilename: filename,
+			TempFilepath:     tmp.Name(),
+		})
 		if err != nil {
-			log.Printf("upload pipeline failed for %s: %v", result.Filename, err)
-			result.Error = friendlyUploadError(err, maxPerFile)
-		} else {
-			result.PhotoID = photo.ID
+			log.Printf("failed to enqueue job for %s: %v", filename, err)
+			os.Remove(tmp.Name())
+			continue
 		}
 
-		// Render HTMX partial for this file
-		if err := h.RenderTemplate(w, "upload_row.html", result); err != nil {
-			http.Error(w, "template render error", http.StatusInternalServerError)
-			return
-		}
-		if flusher != nil {
-			flusher.Flush()
-		}
+		filesQueued++
 	}
+
+	// Trigger worker to start processing immediately
+	if h.worker != nil && filesQueued > 0 {
+		h.worker.TriggerSignal()
+	}
+
+	// Render the progress bar immediately
+	// We pass the request to AdminUploadStatus to reuse logic
+	h.AdminUploadStatus(w, r)
 }

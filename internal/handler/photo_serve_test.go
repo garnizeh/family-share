@@ -28,7 +28,7 @@ func TestDirectDataPhotosRoute_NotFound(t *testing.T) {
 	defer storageCleanup()
 
 	cfg := &config.Config{DataDir: storageDir, RateLimitShare: 100000}
-	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg)
+	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg, nil)
 
 	r := chi.NewRouter()
 	h.RegisterRoutes(r)
@@ -52,7 +52,7 @@ func TestServeSharedPhoto_AllowsWithValidToken(t *testing.T) {
 	defer storageCleanup()
 
 	cfg := &config.Config{DataDir: storageDir, RateLimitShare: 100000}
-	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg)
+	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg, nil)
 
 	// create album and photo record
 	album := testutil.CreateTestAlbum(t, q, "Public Album", "")
@@ -107,7 +107,7 @@ func TestServeSharedPhoto_DeniesWithInvalidToken(t *testing.T) {
 	defer storageCleanup()
 
 	cfg := &config.Config{DataDir: storageDir, RateLimitShare: 100000}
-	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg)
+	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg, nil)
 
 	album := testutil.CreateTestAlbum(t, q, "Private Album", "")
 	photo := testutil.CreateTestPhoto(t, q, album.ID, "private.webp")
@@ -154,7 +154,7 @@ func TestServeSharedPhoto_UsesCreatedAtPath(t *testing.T) {
 	defer storageCleanup()
 
 	cfg := &config.Config{DataDir: storageDir, RateLimitShare: 100000}
-	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg)
+	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg, nil)
 
 	album := testutil.CreateTestAlbum(t, q, "Stable Path Album", "")
 	photo := testutil.CreateTestPhoto(t, q, album.ID, "stable.webp")
@@ -205,7 +205,7 @@ func TestAdminPhotoRoute_RequiresAuth(t *testing.T) {
 	defer storageCleanup()
 
 	cfg := &config.Config{DataDir: storageDir, AdminPasswordHash: testutil.HashPassword(t, "pwd"), RateLimitAdmin: 100000, RateLimitShare: 100000}
-	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg)
+	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg, nil)
 
 	album := testutil.CreateTestAlbum(t, q, "Admin Album", "")
 	photo := testutil.CreateTestPhoto(t, q, album.ID, "admin.webp")

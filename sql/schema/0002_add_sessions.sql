@@ -1,4 +1,4 @@
--- Sessions table for admin authentication
+-- sessions table for admin authentication
 CREATE TABLE IF NOT EXISTS sessions (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,

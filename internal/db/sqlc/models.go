@@ -38,6 +38,17 @@ type Photo struct {
 	CreatedAt sql.NullTime `json:"created_at"`
 }
 
+type ProcessingQueue struct {
+	ID               int64          `json:"id"`
+	AlbumID          int64          `json:"album_id"`
+	OriginalFilename string         `json:"original_filename"`
+	TempFilepath     string         `json:"temp_filepath"`
+	Status           string         `json:"status"`
+	ErrorMessage     sql.NullString `json:"error_message"`
+	CreatedAt        sql.NullTime   `json:"created_at"`
+	UpdatedAt        sql.NullTime   `json:"updated_at"`
+}
+
 type SchemaMigration struct {
 	Version   int64        `json:"version"`
 	AppliedAt sql.NullTime `json:"applied_at"`

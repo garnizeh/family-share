@@ -25,7 +25,7 @@ func TestHealthCheck_OK(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10}, nil)
 
 	req := httptest.NewRequest("GET", "/health", nil)
 	w := httptest.NewRecorder()
@@ -54,7 +54,7 @@ func TestHealthCheck_DBDown(t *testing.T) {
 	}
 
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10}, nil)
 
 	// Close DB to simulate outage
 	dbConn.Close()
@@ -118,7 +118,7 @@ func TestGracefulShutdown(t *testing.T) {
 	defer dbConn.Close()
 
 	store := storage.New("./testdata")
-	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10})
+	h := handler.New(dbConn, store, web.EmbedFS, &config.Config{RateLimitShare: 60, RateLimitAdmin: 10}, nil)
 
 	// Setup chi router
 	// Use a real http.Server to test Shutdown behavior

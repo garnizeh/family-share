@@ -11,6 +11,8 @@ import (
 
 type Querier interface {
 	ClearAlbumCoverIfPhoto(ctx context.Context, coverPhotoID sql.NullInt64) error
+	ClearFailedJobs(ctx context.Context, albumID int64) error
+	CountActiveJobs(ctx context.Context, albumID int64) (int64, error)
 	CountActivityByTypeSince(ctx context.Context, createdAt sql.NullTime) ([]CountActivityByTypeSinceRow, error)
 	CountAlbumViewsSince(ctx context.Context, createdAt sql.NullTime) (int64, error)
 	CountAlbums(ctx context.Context) (int64, error)
@@ -28,15 +30,19 @@ type Querier interface {
 	DeleteAlbum(ctx context.Context, id int64) error
 	DeleteExpiredSessions(ctx context.Context) error
 	DeleteExpiredShareLinks(ctx context.Context) ([]DeleteExpiredShareLinksRow, error)
+	DeleteJob(ctx context.Context, id int64) error
 	DeleteOldActivityEvents(ctx context.Context, createdAt sql.NullTime) error
 	DeleteOrphanedPhotos(ctx context.Context) ([]DeleteOrphanedPhotosRow, error)
 	DeletePhoto(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteUserSessions(ctx context.Context, userID string) error
+	EnqueueJob(ctx context.Context, arg EnqueueJobParams) (ProcessingQueue, error)
 	GetAlbum(ctx context.Context, id int64) (Album, error)
 	GetAlbumWithPhotoCount(ctx context.Context, id int64) (GetAlbumWithPhotoCountRow, error)
+	GetNextPendingJob(ctx context.Context) (ProcessingQueue, error)
 	GetPhoto(ctx context.Context, id int64) (Photo, error)
 	GetPhotosForAlbum(ctx context.Context, albumID int64) ([]Photo, error)
+	GetQueueStatus(ctx context.Context, albumID int64) (GetQueueStatusRow, error)
 	GetSession(ctx context.Context, id string) (Session, error)
 	GetShareLink(ctx context.Context, id int64) (ShareLink, error)
 	GetShareLinkByToken(ctx context.Context, token string) (ShareLink, error)
@@ -46,6 +52,7 @@ type Querier interface {
 	ListAlbums(ctx context.Context, arg ListAlbumsParams) ([]Album, error)
 	ListAlbumsWithPhotoCount(ctx context.Context, arg ListAlbumsWithPhotoCountParams) ([]ListAlbumsWithPhotoCountRow, error)
 	ListAllPhotosWithAlbum(ctx context.Context, arg ListAllPhotosWithAlbumParams) ([]ListAllPhotosWithAlbumRow, error)
+	ListFailedJobs(ctx context.Context, albumID int64) ([]ProcessingQueue, error)
 	ListPhotosByAlbum(ctx context.Context, arg ListPhotosByAlbumParams) ([]Photo, error)
 	ListRecentActivity(ctx context.Context, arg ListRecentActivityParams) ([]ActivityEvent, error)
 	ListShareLinks(ctx context.Context, arg ListShareLinksParams) ([]ShareLink, error)
@@ -53,6 +60,7 @@ type Querier interface {
 	RevokeShareLink(ctx context.Context, id int64) error
 	SetAlbumCover(ctx context.Context, arg SetAlbumCoverParams) error
 	UpdateAlbum(ctx context.Context, arg UpdateAlbumParams) error
+	UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams) error
 }
 
 var _ Querier = (*Queries)(nil)

@@ -42,7 +42,7 @@ func TestAdminLogin_Integration(t *testing.T) {
 		DataDir:           storageDir,
 	}
 
-	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg)
+	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg, nil)
 
 	// Test invalid password
 	t.Run("InvalidPassword", func(t *testing.T) {
@@ -134,7 +134,7 @@ func TestShareLink_Integration(t *testing.T) {
 		DataDir:           storageDir,
 	}
 
-	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg)
+	h := handler.New(db, storage.New(storageDir), web.EmbedFS, cfg, nil)
 
 	ctx := context.Background()
 

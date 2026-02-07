@@ -51,21 +51,26 @@
 
         <section class="mb-8">
             <h2 class="section-title">Upload Photos</h2>
-            <form hx-post="/admin/albums/{{.Album.ID}}/photos" hx-encoding="multipart/form-data"
-                hx-target="#upload-list" hx-swap="beforeend"
-                hx-on::after-request="setTimeout(() => { window.location.reload(); }, 1000)">
-                <div class="upload-zone">
-                    <div class="upload-zone-icon">📤</div>
-                    <h3 class="upload-zone-title">Upload Photos</h3>
-                    <p id="upload-help" class="upload-zone-hint">Select one or more photos (max 25MB each)</p>
-                    <label for="album-upload" class="form-label" style="margin-top: var(--space-3);">Choose
-                        files</label>
-                    <input id="album-upload" type="file" name="photos" accept="image/*" multiple required
-                        aria-describedby="upload-help" style="margin-bottom: 1rem;">
-                    <button type="submit" class="btn btn-primary">Upload</button>
-                </div>
-            </form>
-            <div id="upload-list" class="upload-list mt-4" aria-live="polite"></div>
+            {{if .ProcessingBatch}}
+            {{template "upload_progress" .}}
+            {{else}}
+            <div id="upload-container">
+                <form hx-post="/admin/albums/{{.Album.ID}}/photos" hx-encoding="multipart/form-data"
+                    hx-target="#upload-container" hx-swap="outerHTML">
+                    <div class="upload-zone">
+                        <div class="upload-zone-icon">📤</div>
+                        <h3 class="upload-zone-title">Upload Photos</h3>
+                        <p id="upload-help" class="upload-zone-hint">Select up to 50 photos (max 25MB each)</p>
+                        <label for="album-upload" class="form-label" style="margin-top: var(--space-3);">Choose
+                            files</label>
+                        <input id="album-upload" type="file" name="photos" accept="image/*" multiple required
+                            aria-describedby="upload-help" style="margin-bottom: 1rem;"
+                            onchange="if(this.files.length > 50) { alert('Maximum 50 files allowed per batch.'); this.value=''; }">
+                        <button type="submit" class="btn btn-primary">Upload</button>
+                    </div>
+                </form>
+            </div>
+            {{end}}
         </section>
 
         <section id="photos-section">
