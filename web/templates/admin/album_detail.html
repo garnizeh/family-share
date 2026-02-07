@@ -55,8 +55,21 @@
             {{template "upload_progress" .}}
             {{else}}
             <div id="upload-container" style="position: relative;">
+                <style>
+                    #upload-overlay {
+                        opacity: 0;
+                        pointer-events: none;
+                        transition: opacity 0.2s ease;
+                        display: flex;
+                    }
+
+                    #upload-overlay.htmx-request {
+                        opacity: 1;
+                        pointer-events: all;
+                    }
+                </style>
                 <div id="upload-overlay" class="htmx-indicator"
-                    style="position: absolute; inset: 0; background: rgba(255,255,255,0.9); z-index: 10; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+                    style="position: absolute; inset: 0; background: rgba(255,255,255,0.9); z-index: 10; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
                     <div style="margin-bottom: var(--space-3);">
                         <svg style="width: 40px; height: 40px; animation: spin 1s linear infinite;" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"
