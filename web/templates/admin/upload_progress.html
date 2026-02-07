@@ -1,7 +1,7 @@
 {{define "upload_progress"}}
 {{if .Polling}}
 <div id="upload-container" class="upload-zone text-center" hx-get="/admin/upload/status?album_id={{.Album.ID}}"
-    hx-trigger="load delay:2s" hx-target="#upload-container" hx-swap="outerHTML" hx-indicator="#loading-spinner">
+    hx-trigger="load delay:2s" hx-target="#upload-container" hx-swap="outerHTML">
     {{else}}
     <div id="upload-container" class="upload-zone text-center">
         {{end}}
