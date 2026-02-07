@@ -54,9 +54,25 @@
             {{if .ProcessingBatch}}
             {{template "upload_progress" .}}
             {{else}}
-            <div id="upload-container">
+            <div id="upload-container" style="position: relative;">
+                <div id="upload-overlay" class="htmx-indicator"
+                    style="position: absolute; inset: 0; background: rgba(255,255,255,0.9); z-index: 10; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+                    <div style="margin-bottom: var(--space-3);">
+                        <svg style="width: 40px; height: 40px; animation: spin 1s linear infinite;" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"
+                                opacity="0.25" style="color: var(--color-primary);"></circle>
+                            <path fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                style="color: var(--color-primary); opacity: 0.75;"></path>
+                        </svg>
+                    </div>
+                    <p style="font-weight: 500; color: var(--color-gray-700); font-size: 1.1rem;">Uploading photos...
+                    </p>
+                    <p style="color: var(--color-gray-500); font-size: 0.9rem;">Please wait, processing images.</p>
+                </div>
+
                 <form hx-post="/admin/albums/{{.Album.ID}}/photos" hx-encoding="multipart/form-data"
-                    hx-target="#upload-container" hx-swap="outerHTML">
+                    hx-target="#upload-container" hx-swap="outerHTML" hx-indicator="#upload-overlay">
                     <div class="upload-zone">
                         <div class="upload-zone-icon">📤</div>
                         <h3 class="upload-zone-title">Upload Photos</h3>
@@ -78,35 +94,7 @@
             {{if .Photos}}
             <div id="photos-grid" class="grid-photos">
                 {{range .Photos}}
-                <div class="card card-photo" id="photo-{{.ID}}">
-                    <img src="/admin/photos/{{.ID}}.webp" alt="Photo {{.ID}}" class="card-photo-preview" loading="lazy"
-                        @click="lightboxSrc = '/admin/photos/{{.ID}}.webp'; lightboxFilename = '{{.Filename}}'; lightboxOpen = true"
-                        style="cursor: pointer;">
-                    <div class="card-photo-info">
-                        <p class="text-xs text-muted mb-0">{{.Filename}}</p>
-                    </div>
-                    <div class="card-photo-actions">
-                        <button hx-post="/admin/photos/{{.ID}}/rotate?angle=90" hx-trigger="click" hx-swap="none"
-                            class="btn btn-secondary btn-sm btn-icon" title="Rotate Left (90°)"
-                            aria-label="Rotate Left">
-                            ↺
-                        </button>
-                        <button hx-post="/admin/photos/{{.ID}}/rotate?angle=-90" hx-trigger="click" hx-swap="none"
-                            class="btn btn-secondary btn-sm btn-icon" title="Rotate Right (90°)"
-                            aria-label="Rotate Right">
-                            ↻
-                        </button>
-                        <button hx-post="/admin/photos/{{.ID}}/set-cover" hx-trigger="click" hx-swap="none"
-                            class="btn btn-secondary btn-sm btn-icon" title="Set as cover photo"
-                            aria-label="Set as cover photo">
-                            ⭐
-                        </button>
-                        <button @click="deletePhotoId = {{.ID}}; confirmDeletePhotoOpen = true"
-                            class="btn btn-danger btn-sm btn-icon" title="Delete photo" aria-label="Delete photo">
-                            🗑️
-                        </button>
-                    </div>
-                </div>
+                {{template "photo_card" .}}
                 {{end}}
             </div>
             {{else}}
@@ -243,6 +231,16 @@
             </div>
         </div>
     </main>
+
+    <style>
+        #upload-overlay.htmx-request {
+            display: flex !important;
+        }
+
+        .card-photo .htmx-indicator.htmx-request {
+            display: flex !important;
+        }
+    </style>
 </body>
 
 </html>

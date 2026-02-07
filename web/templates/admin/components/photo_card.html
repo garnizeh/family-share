@@ -1,0 +1,46 @@
+{{define "photo_card"}}
+<div class="card card-photo relative" id="photo-{{.ID}}" style="position: relative;">
+    <!-- Loading Overlay -->
+    <div class="htmx-indicator absolute inset-0 flex items-center justify-center bg-white/80 z-10"
+        style="position: absolute; inset: 0; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 10;">
+        <svg style="width: 30px; height: 30px; animation: spin 1s linear infinite;" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"
+                style="color: var(--color-primary);"></circle>
+            <path fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                style="color: var(--color-primary); opacity: 0.75;"></path>
+        </svg>
+    </div>
+
+    {{$cacheBuster := .UpdatedAt.Time.Unix}}
+    <img src="/admin/photos/{{.ID}}.webp?v={{$cacheBuster}}" alt="Photo {{.ID}}" class="card-photo-preview"
+        loading="lazy"
+        @click="lightboxSrc = '/admin/photos/{{.ID}}.webp?v={{$cacheBuster}}'; lightboxFilename = '{{.Filename}}'; lightboxOpen = true"
+        style="cursor: pointer;">
+
+    <div class="card-photo-info">
+        <p class="text-xs text-muted mb-0">{{.Filename}}</p>
+    </div>
+
+    <div class="card-photo-actions">
+        <button hx-post="/admin/photos/{{.ID}}/rotate?angle=90" hx-trigger="click" hx-target="#photo-{{.ID}}"
+            hx-swap="outerHTML" hx-indicator="#photo-{{.ID}} .htmx-indicator" class="btn btn-secondary btn-sm btn-icon"
+            title="Rotate Left (90°)" aria-label="Rotate Left">
+            ↺
+        </button>
+        <button hx-post="/admin/photos/{{.ID}}/rotate?angle=-90" hx-trigger="click" hx-target="#photo-{{.ID}}"
+            hx-swap="outerHTML" hx-indicator="#photo-{{.ID}} .htmx-indicator" class="btn btn-secondary btn-sm btn-icon"
+            title="Rotate Right (90°)" aria-label="Rotate Right">
+            ↻
+        </button>
+        <button hx-post="/admin/photos/{{.ID}}/set-cover" hx-trigger="click" hx-swap="none"
+            class="btn btn-secondary btn-sm btn-icon" title="Set as cover photo" aria-label="Set as cover photo">
+            ⭐
+        </button>
+        <button @click="deletePhotoId = {{.ID}}; confirmDeletePhotoOpen = true" class="btn btn-danger btn-sm btn-icon"
+            title="Delete photo" aria-label="Delete photo">
+            🗑️
+        </button>
+    </div>
+</div>
+{{end}}
