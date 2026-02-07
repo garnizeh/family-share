@@ -12,7 +12,7 @@
         </svg>
     </div>
 
-    {{$cacheBuster := .UpdatedAt.Time.Unix}}
+    {{$cacheBuster := .SizeBytes}}
     <img src="/admin/photos/{{.ID}}.webp?v={{$cacheBuster}}" alt="Photo {{.ID}}" class="card-photo-preview"
         loading="lazy"
         @click="lightboxSrc = '/admin/photos/{{.ID}}.webp?v={{$cacheBuster}}'; lightboxFilename = '{{.Filename}}'; lightboxOpen = true"
