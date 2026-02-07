@@ -4,20 +4,14 @@
 
 {$DOMAIN} {
     reverse_proxy app:8080 {
-        # Preserve the original Host and proto headers
+        # Preserve the original Host header
         header_up Host {host}
-        header_up X-Forwarded-Proto {scheme}
 
-        # Increase backend transport timeouts to allow large/slow uploads
         transport http {
-            # allow slow uploads to stream
-            read_timeout 15m
-            # allow longer writes from backend
-            write_timeout 30m
             # dial timeout to backend service
             dial_timeout 5s
             # idle timeout for backend connections
-            idle_timeout 2m
+            keepalive_idle_timeout 2m
         }
     }
     encode gzip
