@@ -34,6 +34,11 @@ func InitDB(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("enable foreign keys: %w", err)
 	}
 
+	// SQLite works best with a single shared connection for concurrent writes.
+	// This prevents "database is locked" errors under load by serializing writes.
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+
 	if err := ApplyMigrations(db, fssql.MigrationsFS); err != nil {
 		db.Close()
 		return nil, err
