@@ -1,40 +1,46 @@
 {{define "upload_progress"}}
+{{if .Polling}}
 <div id="upload-container" class="upload-zone text-center" hx-get="/admin/upload/status?album_id={{.Album.ID}}"
-    hx-trigger="load delay:2s" hx-swap="outerHTML">
-
-    <div class="mb-4 text-3xl animate-spin">⏳</div>
-    <h3 class="text-xl font-semibold mb-2">Processing Photos...</h3>
-
-    {{if .Stats}}
-    <div class="w-full bg-gray-200 rounded-full h-4 mb-4 dark:bg-gray-700 max-w-md mx-auto relative overflow-hidden">
-        <div class="bg-blue-600 h-4 rounded-full transition-all duration-500" style="width: {{.Stats.Percent}}%"></div>
-    </div>
-
-    <p class="text-muted text-sm">
-        Pending: <strong>{{.Stats.PendingCount}}</strong> ·
-        Processing: <strong>{{.Stats.ProcessingCount}}</strong> ·
-        Done: <strong class="text-green-600">{{.Stats.CompletedCount}}</strong> ·
-        Failed: <strong class="text-red-600">{{.Stats.FailedCount}}</strong>
-    </p>
+    hx-trigger="load delay:2s" hx-target="#upload-container" hx-swap="outerHTML" hx-indicator="#loading-spinner">
     {{else}}
-    <p class="text-muted">Initializing queue...</p>
-    {{end}}
-
-</div>
-
-{{if and .Stats (eq .Stats.PendingCount 0) (eq .Stats.ProcessingCount 0)}}
-<!-- Batch finished -->
-<div class="text-center mt-4 fade-in">
-    <div class="mb-4">
-        {{if gt .Stats.FailedCount 0}}
-        <div class="text-red-500 font-bold mb-2">Completed with some errors.</div>
-        {{else}}
-        <div class="text-green-500 font-bold mb-2">All photos processed successfully!</div>
+    <div id="upload-container" class="upload-zone text-center">
         {{end}}
+
+        <div class="mb-4 text-3xl animate-spin">⏳</div>
+        <h3 class="text-xl font-semibold mb-2">Processing Photos...</h3>
+
+        {{if .StatsLoaded}}
+        <div
+            class="w-full bg-gray-200 rounded-full h-4 mb-4 dark:bg-gray-700 max-w-md mx-auto relative overflow-hidden">
+            <div class="bg-blue-600 h-4 rounded-full transition-all duration-500" style="{{printf " width: %d%%;"
+                .Stats.Percent}}">
+            </div>
+        </div>
+
+        <p class="text-muted text-sm">
+            Pending: <strong>{{.Stats.PendingCount}}</strong> ·
+            Processing: <strong>{{.Stats.ProcessingCount}}</strong> ·
+            Done: <strong class="text-green-600">{{.Stats.CompletedCount}}</strong> ·
+            Failed: <strong class="text-red-600">{{.Stats.FailedCount}}</strong>
+        </p>
+        {{else}}
+        <p class="text-muted">Initializing queue...</p>
+        {{end}}
+
+        {{if and .StatsLoaded (not .Polling) (eq .Stats.PendingCount 0) (eq .Stats.ProcessingCount 0)}}
+        <div class="text-center mt-4 fade-in">
+            <div class="mb-4">
+                {{if gt .Stats.FailedCount 0}}
+                <div class="text-red-500 font-bold mb-2">Completed with some errors.</div>
+                {{else}}
+                <div class="text-green-500 font-bold mb-2">All photos processed successfully!</div>
+                {{end}}
+            </div>
+            <button class="btn btn-primary" hx-get="/admin/albums/{{.Album.ID}}" hx-target="body">
+                Refresh Album
+            </button>
+        </div>
+        {{end}}
+
     </div>
-    <button class="btn btn-primary" hx-get="/admin/albums/{{.Album.ID}}" hx-target="body">
-        Refresh Album
-    </button>
-</div>
-{{end}}
-{{end}}
+    {{end}}
